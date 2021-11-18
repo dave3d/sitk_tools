@@ -3,6 +3,12 @@
 import sys, getopt
 import SimpleITK as sitk
 
+#
+#  Scan a directory for DICOM series.
+#
+#  Can also covert all series to other formats with
+#  the '--convert' flag.
+#
 
 verbose = 0
 recFlag = False
