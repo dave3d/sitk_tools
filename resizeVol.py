@@ -3,6 +3,10 @@
 import sys, getopt
 import SimpleITK as sitk
 
+#
+# A script that linearly resamples a volume to a new size.
+# If a new size in any dimension is not specified, the size
+# is unchanged.
 
 def resizeVol(vol, newsize):
 
@@ -53,7 +57,6 @@ if __name__ == "__main__":
         usage()
         sys.exit(1)
 
-
     for o, a in opts:
         if o in ("-h", "--help"):
             usage()
@@ -68,6 +71,8 @@ if __name__ == "__main__":
             newsize[2] = int(a)
         else:
             assert False, "unhandled option"
+
+    print(newsize)
 
     if len(args) < 2:
         usage()
@@ -89,7 +94,8 @@ if __name__ == "__main__":
     newsize = newsize[:dims]
 
     for i in range(dims):
-        newsize[i] = min(newsize[i], size[i])
+        if newsize[i] == 1000000:
+            newsize[i] = size[i]
 
     if verbose:
         print ( "New size: ", newsize )
