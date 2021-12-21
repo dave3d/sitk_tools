@@ -16,6 +16,15 @@ suffix = ".nrrd"
 min_z = 20
 convertFlag = False
 name_src = 1
+dictFlag = False
+
+# tags of interest
+dicom_tags = [ '0008|0020',  # acquisition date
+    '0008|0030', # study time
+    '0008|103e', # series description
+    '0010|0010', # patient name
+    '0010|0020', # patient ID
+]
 
 def usage():
     print ("")
@@ -25,14 +34,15 @@ def usage():
     print ("  -v, --verbose    Increase verbosity level")
     print ("  -r, --recursive  Search directory recursively")
     print ("  -c, --convert    Convert series to volumes")
+    print ("  -d, --dict       Dump the metadata dictionary")
     print ("  -s string, --suffix string    Output volume suffix")
     print ("  -t int,  --thickness   Min Z thickness for series conversion")
     print ("  -n source,  --name source   Source of the output name (seriesid or description)")
 
 
 try:
-    opts, args= getopt.getopt( sys.argv[1:], "vhrcs:t:n:",
-                              [ "verbose", "help", "recursive", "convert",
+    opts, args= getopt.getopt( sys.argv[1:], "vhrcds:t:n:",
+                              [ "verbose", "help", "recursive", "convert", "dict",
                                 "suffix=", "thickness=", "name=",
                               ] )
 
@@ -51,6 +61,8 @@ for o, a in opts:
         recFlag = True
     elif o in ("-c", "--convert"):
         convertFlag = True
+    elif o in ("-d", "--dict"):
+        dictFlag = True
     elif o in ("-s", "--suffix"):
         suffix = a
     elif o in ("-t", "--thickness"):
@@ -102,7 +114,7 @@ for dirname in args:
             img = isr.Execute()
             print(img)
 
-            if verbose>1:
+            if verbose>1 or dictFlag:
                 # Dump the meta data dictionary
                 print ("\nDumping the meta data dictionary\n")
 
@@ -117,13 +129,34 @@ for dirname in args:
 
             series_description = isr.GetMetaData(0, "0008|103e");
             if len(series_description) and name_src==1:
-                outname = dirname + "/" + series_description + suffix
+                sd = series_description.rstrip()
+                sd = sd.replace(' ', '_')
+                outname = dirname + "/" + sd + suffix
             else:
                 outname = dirname + "/" + s + suffix
 
-            if len(series_description):
-                img.SetMetaData("0008|103e", series_description)
+
+            # copy the dicom tags of interest
+            for k in dicom_tags:
+                v = isr.GetMetaData(0,k)
+                print(k, v)
+                if len(v):
+                    img.SetMetaData(k, v)
+
             print("\nWriting", outname)
             sitk.WriteImage(img, outname, useCompression=True)
+
+        else:
+            if dictFlag and len(fnames)>min_z:
+                print("Metadata Dictionary")
+                # dump the dictionary of the first file in the series
+                img1 = sitk.ReadImage(fnames[0])
+                keys = img1.GetMetaDataKeys()
+                for k in keys:
+                    v = img1.GetMetaData(k)
+                    if len(v)>255:
+                        print (k, ": ", v[0:99], " ...")
+                    else:
+                        print(k, ": ", v)
     print ("")
 
