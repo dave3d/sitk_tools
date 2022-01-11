@@ -130,7 +130,8 @@ for dirname in args:
             series_description = isr.GetMetaData(0, "0008|103e");
             if len(series_description) and name_src==1:
                 sd = series_description.rstrip()
-                sd = sd.replace(' ', '_')
+                d = sd.maketrans(" /", "_-", "*")
+                sd = sd.translate(d)
                 outname = dirname + "/" + sd + suffix
             else:
                 outname = dirname + "/" + s + suffix
