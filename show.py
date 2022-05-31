@@ -10,4 +10,4 @@ import SimpleITK as sitk
 for x in sys.argv[1:]:
   print(x)
   img = sitk.ReadImage(x)
-  sitk.Show(img)
+  sitk.Show(img, x)
