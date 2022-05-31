@@ -128,11 +128,14 @@ for dirname in args:
                         print (k, ": ", v)
 
             series_description = isr.GetMetaData(0, "0008|103e");
+            ac_date = isr.GetMetaData(0, "0008|0020");
             if len(series_description) and name_src==1:
                 sd = series_description.rstrip()
                 d = sd.maketrans(" /", "_-", "*")
-                sd = sd.translate(d)
-                outname = dirname + "/" + sd + suffix
+                name = sd.translate(d)
+                if ac_date:
+                    name = ac_date + "-" + name
+                outname = dirname + "/" + name + suffix
             else:
                 outname = dirname + "/" + s + suffix
 
