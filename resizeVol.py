@@ -8,6 +8,7 @@ import SimpleITK as sitk
 # If a new size in any dimension is not specified, the size
 # is unchanged.
 
+
 def resizeVol(vol, newsize):
 
     size = vol.GetSize()
@@ -17,7 +18,7 @@ def resizeVol(vol, newsize):
     elif dims > len(newsize):
         # if newsize doesn't have enough dimensions
         # tack on the rest of the dimensions from the input volume
-        newsize = newsize + size[dims-1:]
+        newsize = newsize + size[dims - 1 :]
 
     origin = vol.GetOrigin()
     direction = vol.GetDirection()
@@ -26,10 +27,11 @@ def resizeVol(vol, newsize):
     newspacing = []
 
     for i in range(len(size)):
-        newspacing.append( size[i]*spacing[i] / newsize[i] )
+        newspacing.append(size[i] * spacing[i] / newsize[i])
 
-    vol2 = sitk.Resample( vol, newsize, sitk.Transform(), sitk.sitkLinear, origin, newspacing,
-                          direction )
+    vol2 = sitk.Resample(
+        vol, newsize, sitk.Transform(), sitk.sitkLinear, origin, newspacing, direction
+    )
 
     return vol2
 
@@ -41,19 +43,20 @@ if __name__ == "__main__":
     newsize = [1000000, 1000000, 1000000]
 
     def usage():
-        print ( "" )
-        print ( "resizeVol.py [options] input_volume output_volume" )
-        print ( "" )
-        print ( " -x int   New X size" )
-        print ( " -y int   New Y size" )
-        print ( " -z int   New Z size" )
-        print ( "" )
+        print("")
+        print("resizeVol.py [options] input_volume output_volume")
+        print("")
+        print(" -x int   New X size")
+        print(" -y int   New Y size")
+        print(" -z int   New Z size")
+        print("")
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "vhx:y:z:",
-            [ "verbose", "help", "x=", "y=", "z="] )
+        opts, args = getopt.getopt(
+            sys.argv[1:], "vhx:y:z:", ["verbose", "help", "x=", "y=", "z="]
+        )
     except getopt.GetoptError as err:
-        print ( str(err) )
+        print(str(err))
         usage()
         sys.exit(1)
 
@@ -82,9 +85,9 @@ if __name__ == "__main__":
     outName = args[1]
 
     if verbose:
-        print ()
-        print ( "Input file: ", inName )
-        print ( "Output file: ", outName )
+        print()
+        print("Input file: ", inName)
+        print("Output file: ", outName)
 
     vol = sitk.ReadImage(inName)
     size = vol.GetSize()
@@ -98,9 +101,8 @@ if __name__ == "__main__":
             newsize[i] = size[i]
 
     if verbose:
-        print ( "New size: ", newsize )
+        print("New size: ", newsize)
 
     outvol = resizeVol(vol, newsize)
 
     sitk.WriteImage(outvol, outName)
-

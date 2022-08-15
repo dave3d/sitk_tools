@@ -17,4 +17,3 @@ for f in fnames:
     for k in keys:
         v = img.GetMetaData(k)
         print(k, ": ", v)
-

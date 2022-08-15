@@ -18,10 +18,16 @@ if __name__ == "__main__":
     verbose = False
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "hv",
-            [ "help", "verbose", ] )
+        opts, args = getopt.getopt(
+            sys.argv[1:],
+            "hv",
+            [
+                "help",
+                "verbose",
+            ],
+        )
     except getopt.GetoptError as err:
-        print ( str(err) )
+        print(str(err))
         usage()
         sys.exit(1)
 
@@ -34,14 +40,12 @@ if __name__ == "__main__":
         else:
             assert False, "unhandled option"
 
-
     if len(args) < 2:
         usage()
         sys.exit(2)
 
     in_name = args[0]
     out_name = args[1]
-
 
     img = sitk.ReadImage(in_name)
 
