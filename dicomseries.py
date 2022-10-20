@@ -1,6 +1,8 @@
 #! /usr/bin/env python
 
-import sys, getopt
+import sys
+import getopt
+import os
 import SimpleITK as sitk
 
 #
@@ -159,6 +161,8 @@ for dirname in args:
                 if len(v):
                     img.SetMetaData(k, v)
 
+            if os.path.exists(outname):
+                print("WARNING:", outname, "already exists.  Overwriting")
             print("\nWriting", outname)
             sitk.WriteImage(img, outname, useCompression=True)
 
