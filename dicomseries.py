@@ -27,6 +27,8 @@ dicom_tags = [
     "0008|103e",  # series description
     "0010|0010",  # patient name
     "0010|0020",  # patient ID
+    "0020|000d",  # study instance UID
+    "0020|000e",  # series instance UID
 ]
 
 
@@ -148,8 +150,9 @@ for dirname in args:
                 sd = series_description.rstrip()
                 d = sd.maketrans(" /", "_-", "*")
                 name = sd.translate(d)
-                if ac_date:
-                    name = ac_date + "-" + name
+                #if ac_date:
+                #    name = ac_date + "-" + name
+                name = s + "-" + name
                 outname = dirname + "/" + name + suffix
             else:
                 outname = dirname + "/" + s + suffix
