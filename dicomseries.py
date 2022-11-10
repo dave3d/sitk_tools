@@ -146,13 +146,22 @@ for dirname in args:
 
             series_description = isr.GetMetaData(0, "0008|103e")
             ac_date = isr.GetMetaData(0, "0008|0020")
+            patient_name = isr.GetMetaData(0, "0010|0010")
+
             if len(series_description) and name_src == 1:
+
                 sd = series_description.rstrip()
                 d = sd.maketrans(" /", "_-", "*")
-                name = sd.translate(d)
+                sd = sd.translate(d)
+
                 #if ac_date:
-                #    name = ac_date + "-" + name
-                name = s + "-" + name
+                #    name = ac_date + "-" + sd
+                # name = s + "-" + sd
+
+                pn = patient_name.rstrip()
+                pn = pn.translate(d)
+
+                name = pn + "-" + ac_date + "-" + sd
                 outname = dirname + "/" + name + suffix
             else:
                 outname = dirname + "/" + s + suffix
