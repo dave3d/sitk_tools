@@ -43,9 +43,8 @@ def usage():
     print("  -d, --dict       Dump the metadata dictionary")
     print("  -s string, --suffix string    Output volume suffix")
     print("  -t int,  --thickness   Min Z thickness for series conversion")
-    print(
-        "  -n source,  --name source   Source of the output name (seriesid or description)"
-    )
+    print("  -n source,  --name source   Source of the output name",
+          "(seriesid or description)")
 
 
 try:
@@ -144,9 +143,18 @@ for dirname in args:
                     else:
                         print(k, ": ", v)
 
-            series_description = isr.GetMetaData(0, "0008|103e")
-            ac_date = isr.GetMetaData(0, "0008|0020")
-            patient_name = isr.GetMetaData(0, "0010|0010")
+            try:
+                series_description = isr.GetMetaData(0, "0008|103e")
+            except BaseException:
+                series_description = "UnknownSeries"
+            try:
+                ac_date = isr.GetMetaData(0, "0008|0020")
+            except BaseException:
+                ac_date = "UnknownDate"
+            try:
+                patient_name = isr.GetMetaData(0, "0010|0010")
+            except BaseException:
+                patient_name = "UnknownName"
 
             if len(series_description) and name_src == 1:
 
@@ -154,7 +162,7 @@ for dirname in args:
                 d = sd.maketrans(" /", "_-", "*")
                 sd = sd.translate(d)
 
-                #if ac_date:
+                # if ac_date:
                 #    name = ac_date + "-" + sd
                 # name = s + "-" + sd
 
@@ -168,10 +176,13 @@ for dirname in args:
 
             # copy the dicom tags of interest
             for k in dicom_tags:
-                v = isr.GetMetaData(0, k)
-                print(k, v)
-                if len(v):
-                    img.SetMetaData(k, v)
+                try:
+                    v = isr.GetMetaData(0, k)
+                    print(k, v)
+                    if len(v):
+                        img.SetMetaData(k, v)
+                except BaseException:
+                    print(k, "not found")
 
             if os.path.exists(outname):
                 print("WARNING:", outname, "already exists.  Overwriting")

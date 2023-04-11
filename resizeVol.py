@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 
-import sys, getopt
+import sys
+import getopt
 import SimpleITK as sitk
 
 #
@@ -18,7 +19,7 @@ def resizeVol(vol, newsize):
     elif dims > len(newsize):
         # if newsize doesn't have enough dimensions
         # tack on the rest of the dimensions from the input volume
-        newsize = newsize + size[dims - 1 :]
+        newsize = newsize + size[dims - 1:]
 
     origin = vol.GetOrigin()
     direction = vol.GetDirection()
@@ -29,9 +30,8 @@ def resizeVol(vol, newsize):
     for i in range(len(size)):
         newspacing.append(size[i] * spacing[i] / newsize[i])
 
-    vol2 = sitk.Resample(
-        vol, newsize, sitk.Transform(), sitk.sitkLinear, origin, newspacing, direction
-    )
+    vol2 = sitk.Resample(vol, newsize, sitk.Transform(), sitk.sitkLinear,
+                         origin, newspacing, direction)
 
     return vol2
 
