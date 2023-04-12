@@ -91,14 +91,25 @@ def writeMhdFile(mhd_name, fields):
         print("ElementDataFile =", fields['file_name'], file=f_out)
 
 
+def usage():
+    print("hdr2vol.py input_file.hdr [output_file.mhd]")
+
 if __name__ == "__main__":
 
     try:
         hdr_name = sys.argv[1]
+    except BaseException:
+        usage()
+        sys.exit(1)
+
+    try:
         mhd_name = sys.argv[2]
     except BaseException:
-        print("I'm sad")
-        sys.exit(1)
+        if hdr_name.endswith(".hdr"):
+            mhd_name = hdr_name.replace(".hdr", ".mhd")
+        else:
+            mhd_name = hdr_name + ".mhd"
+
 
     fields = parseHdrFile(hdr_name)
     print(fields)
