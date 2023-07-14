@@ -3,10 +3,11 @@
 import SimpleITK as sitk
 
 
-def paint_points(img, points, radius=15, channel=0):
+def paint_points(img, points, channel=0, radius=15):
     """ Paint points into an image. """
     chan = []
-    if img.GetDepth() == 3:
+    print(img)
+    if img.GetNumberOfComponentsPerPixel() == 3:
         for i in range(3):
             chan.append(sitk.VectorIndexSelectionCast(img, i))
     else:
