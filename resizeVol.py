@@ -11,7 +11,6 @@ import SimpleITK as sitk
 
 
 def resizeVol(vol, newsize):
-
     size = vol.GetSize()
     dims = len(size)
     if dims < len(newsize):
