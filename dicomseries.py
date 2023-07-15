@@ -43,8 +43,10 @@ def usage():
     print("  -d, --dict       Dump the metadata dictionary")
     print("  -s string, --suffix string    Output volume suffix")
     print("  -t int,  --thickness   Min Z thickness for series conversion")
-    print("  -n source,  --name source   Source of the output name",
-          "(seriesid or description)")
+    print(
+        "  -n source,  --name source   Source of the output name",
+        "(seriesid or description)",
+    )
 
 
 try:
@@ -157,7 +159,6 @@ for dirname in args:
                 patient_name = "UnknownName"
 
             if len(series_description) and name_src == 1:
-
                 sd = series_description.rstrip()
                 d = sd.maketrans(" /", "_-", "*")
                 sd = sd.translate(d)
