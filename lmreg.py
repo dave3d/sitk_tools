@@ -9,8 +9,8 @@ from paint_points import *
 #
 # Landmark registration
 #
-# lmreg.py --fixed fixed_img --moving moving_img --result new_moving_img \
-#          fixed_points moving_points output_transform.tfm
+# lmreg.py --fixed fixed_img --moving moving_img [--result new_moving_img] \
+#          fixed_points moving_points [output_transform.tfm]
 
 
 def flatten_point_list(pts):
@@ -36,13 +36,18 @@ def read_points(filename):
             words = l.split(" ")
             x = float(words[0])
             y = float(words[1])
+            p = [x, y]
+            if len(words) > 2:
+                print(len(words), words)
+                z = float(words[2])
+                p.append(z)
             # print(x, y)
-            pts.append([x, y])
+            pts.append(p)
 
     return pts
 
 
-def compute_transform(fixed_pts, moving_pts):
+def compute_transform(fixed_pts, moving_pts, threeD=False):
     """Do the actual landmark registration."""
 
     landmark_initializer = sitk.LandmarkBasedTransformInitializerFilter()
@@ -52,7 +57,10 @@ def compute_transform(fixed_pts, moving_pts):
     landmark_initializer.SetFixedLandmarks(flist)
     landmark_initializer.SetMovingLandmarks(flatten_point_list(moving_pts))
 
-    transform = sitk.AffineTransform(2)
+    if threeD:
+        transform = sitk.AffineTransform(3)
+    else:
+        transform = sitk.AffineTransform(2)
 
     # Compute the transform.
     output_transform = landmark_initializer.Execute(transform)
@@ -127,6 +135,23 @@ def parseargs():
         default="",
         help="Resampled moving image file",
     )
+    parser.add_argument(
+        "--overlay",
+        "-o",
+        action="store",
+        dest="overlay",
+        default="",
+        help="Overlay image",
+    )
+
+    parser.add_argument(
+        "--three",
+        "-t",
+        action="store_true",
+        default=False,
+        dest="three",
+        help="Three dimensional transform",
+    )
 
     parser.add_argument(
         "--show",
@@ -136,7 +161,6 @@ def parseargs():
         dest="show",
         help="Show images",
     )
-
     args = parser.parse_args()
     return args
 
@@ -145,17 +169,31 @@ def usage():
     print("lmreg.py [options] fixed.pts moving.pts [output.tform]")
 
 
+def make_points_3d(pts):
+    new_pts = []
+    for p in pts:
+        if len(p) == 2:
+            p.append(0.0)
+        new_pts.append(p)
+    return new_pts
+
+
 if __name__ == "__main__":
     args = parseargs()
 
     print(args)
 
     fixed_pts = read_points(args.fixed_pts)
-    print("fixed points", fixed_pts)
     moving_pts = read_points(args.moving_pts)
+
+    if args.three == True:
+        fixed_pts = make_points_3d(fixed_pts)
+        moving_pts = make_points_3d(moving_pts)
+
+    print("fixed points", fixed_pts)
     print("moving points", moving_pts)
 
-    output_transform = compute_transform(fixed_pts, moving_pts)
+    output_transform = compute_transform(fixed_pts, moving_pts, args.three)
 
     if len(args.output_tfm) == 0:
         output_tfm_name = remove_any_suffix(args.moving_pts) + ".tfm"
@@ -165,38 +203,45 @@ if __name__ == "__main__":
     print("Writing output transform", output_tfm_name)
     sitk.WriteTransform(output_transform, output_tfm_name)
 
-    try:
-        fixed_img = sitk.ReadImage(args.fixed_img)
-        moving_img = sitk.ReadImage(args.moving_img)
-        output_img = sitk.Resample(moving_img, fixed_img, transform=output_transform)
-
-        base_name = remove_any_suffix(args.moving_img)
-
-        if args.result == "":
-            result_name = base_name + "-reg.png"
-        else:
-            result_name = args.result
-
-        print("Writing resample moving image:", result_name)
-        sitk.WriteImage(output_img, result_name)
-    except BaseException:
-        print("No image resampling done")
-        sys.exit()
-
-    sum_img = create_overlay(
-        fixed_pts, moving_pts, output_transform, fixed_img, output_img
-    )
-
     tformed_pts = []
     inv_tform = output_transform.GetInverse()
     for pt in moving_pts:
         tformed_pts.append(inv_tform.TransformPoint(pt))
-    sitk.WriteImage(sum_img, "sum.png")
-
     print("Transformed points:", tformed_pts)
 
-    if args.show == True:
-        sitk.Show(sum_img, "sum")
-        sitk.Show(fixed_img, "fixed")
-        sitk.Show(moving_img, "moving")
-        sitk.Show(output_img, "output")
+    if not args.three:
+        try:
+            fixed_img = sitk.ReadImage(args.fixed_img)
+            moving_img = sitk.ReadImage(args.moving_img)
+            output_img = sitk.Resample(
+                moving_img, fixed_img, transform=output_transform
+            )
+
+            base_name = remove_any_suffix(args.moving_img)
+
+            if args.result == "":
+                result_name = base_name + "-reg.png"
+            else:
+                result_name = args.result
+
+            print("Writing resample moving image:", result_name)
+            sitk.WriteImage(output_img, result_name)
+        except BaseException:
+            print("No image resampling done")
+            sys.exit()
+
+        sum_img = create_overlay(
+            fixed_pts, moving_pts, output_transform, fixed_img, output_img
+        )
+
+        if args.overlay != "":
+            overlay_name = args.overlay
+        else:
+            overlay_name = base_name + "-overlay.png"
+        sitk.WriteImage(sum_img, overlay_name)
+
+        if args.show == True:
+            sitk.Show(sum_img, "sum")
+            sitk.Show(fixed_img, "fixed")
+            sitk.Show(moving_img, "moving")
+            sitk.Show(output_img, "output")
