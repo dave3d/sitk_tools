@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 
 import sys
+import SimpleITK as sitk
 
 #  Script to read a mouse scan header file and produce MetaIO header file
 #
@@ -54,6 +55,14 @@ def parseHdrFile(hdr_name):
         elif words[0] == "study_identifier":
             fields[words[0]] = words[1]
 
+        elif words[0] == "image_ref_shift":
+            xyz = words[1].split(' ')
+            fields["shift"] = xyz
+
+        elif words[0] == "image_ref_rotation":
+            xyz = words[1].split(' ')
+            fields["rotation"] = xyz
+
     return fields
 
 
@@ -65,9 +74,24 @@ def writeMhdFile(mhd_name, fields):
         print("BinaryDataByteOrderMSB =", fields["data_type"] > 4, file=f_out)
         print("CompressedData = False", file=f_out)
 
-        # To be fixed later
-        print("TransformMatrix = 1 0 0 0 1 0 0 0 1", file=f_out)
-        print("Offset = 0 0 0", file=f_out)
+        tmat = [1, 0, 0, 0, 1, 0, 0, 0, 1]
+        if "rotation" in fields:
+            tform = sitk.Euler3DTransform()
+            # convert degrees to radians
+            rot = [0.017453292519943295 * float(ang) for ang in fields["rotation"]]
+            tform.SetRotation(rot[0], rot[1], rot[2])
+            tmat = tform.GetMatrix()
+
+        tform_txt = ""
+        for v in tmat:
+            tform_txt = tform_txt + f' {v:.4g}'
+        print(tform_txt)
+        print("TransformMatrix =", tform_txt, file=f_out)
+
+        shift = [0, 0, 0]
+        if "shift" in fields:
+            shift = fields["shift"]
+        print("Offset =", shift[0], shift[1], shift[2], file=f_out)
         print("CenterOfRotation = 0 0 0", file=f_out)
 
         print(
