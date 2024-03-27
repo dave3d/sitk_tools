@@ -56,11 +56,11 @@ def parseHdrFile(hdr_name):
             fields[words[0]] = words[1]
 
         elif words[0] == "image_ref_shift":
-            xyz = words[1].split(' ')
+            xyz = words[1].split(" ")
             fields["shift"] = xyz
 
         elif words[0] == "image_ref_rotation":
-            xyz = words[1].split(' ')
+            xyz = words[1].split(" ")
             fields["rotation"] = xyz
 
     return fields
@@ -84,7 +84,7 @@ def writeMhdFile(mhd_name, fields):
 
         tform_txt = ""
         for v in tmat:
-            tform_txt = tform_txt + f' {v:.4g}'
+            tform_txt = tform_txt + f" {v:.4g}"
         print(tform_txt)
         print("TransformMatrix =", tform_txt, file=f_out)
 
