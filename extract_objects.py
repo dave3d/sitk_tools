@@ -4,7 +4,7 @@ import sys
 import SimpleITK as sitk
 
 
-def extract_objects(input_mask, n=1):
+def extract_objects(input_mask, n=1, kernel_radius=5):
     """Given an mask image, seperate out the N largest objects.
     The function returns a list of mask images for these extracted
     objects."""
@@ -14,18 +14,15 @@ def extract_objects(input_mask, n=1):
     shape.Execute(objs)
     counts = {}
 
-    max_count = 0
-    max_id = 0
     for i in range(1, shape.GetNumberOfLabels() + 1):
         counts[i] = shape.GetNumberOfPixels(i)
-        if counts[i] > max_count:
-            max_count = counts[i]
-            max_id = i
 
+    # Sort the objects by number of pixels in each object
     sorted_counts = {
         k: v for k, v in sorted(counts.items(), key=lambda item: item[1], reverse=True)
     }
 
+    # Extract the n largest objects
     ids = list(sorted_counts)
     for i in range(n):
 
@@ -33,7 +30,15 @@ def extract_objects(input_mask, n=1):
         count = sorted_counts[obj_id]
         print(obj_id, count)
 
+        # select out the object's voxels
         obj_vol = objs == obj_id
+
+        # clean up the volume
+        obj_vol = sitk.BinaryFillhole(obj_vol)
+        obj_vol = sitk.BinaryClosingByReconstruction(
+            obj_vol, [kernel_radius, kernel_radius, kernel_radius]
+        )
+
         obj_name = f"mask_{i:02d}.nii.gz"
         print("Writing", obj_name)
         sitk.WriteImage(obj_vol, obj_name)
