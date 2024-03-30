@@ -8,8 +8,15 @@ import SimpleITK as sitk
 #
 #  Scan a directory for DICOM series.
 #
-#  Can also covert all series to other formats with
+#  Can also convert all series to other formats with
 #  the '--convert' flag.
+#
+#  In conversion mode, the name of the output volume is derived from
+#  either the series description (--name 1) or the series id (--name 2).
+#  Series description is the default.
+#
+#  The output volume type is specified with the suffix option.
+#  Default is '.nrrd'.
 #
 
 verbose = 0
