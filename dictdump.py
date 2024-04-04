@@ -1,5 +1,9 @@
 #! /usr/bin/env python
 
+#
+#  Simple script to dump out an image's meta-data dictionary
+#
+
 import SimpleITK as sitk
 
 import sys
