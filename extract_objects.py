@@ -4,7 +4,7 @@ import sys
 import SimpleITK as sitk
 
 
-def extract_objects(input_mask, n=1, kernel_radius=5):
+def extract_objects(input_mask, output_name="mask", n=1, kernel_radius=5):
     """Given an mask image, seperate out the N largest objects.
     The function returns a list of mask images for these extracted
     objects."""
@@ -39,12 +39,18 @@ def extract_objects(input_mask, n=1, kernel_radius=5):
             obj_vol, [kernel_radius, kernel_radius, kernel_radius]
         )
 
-        obj_name = f"mask_{i:02d}.nii.gz"
+        obj_name = f"{output_name}_{i:02d}.nii.gz"
         print("Writing", obj_name)
         sitk.WriteImage(obj_vol, obj_name)
 
 
 if __name__ == "__main__":
+
     mask_name = sys.argv[1]
+
+    output_name = "mask"
+    if len(sys.argv) > 2:
+        output_name = sys.argv[2]
+
     mask = sitk.ReadImage(mask_name)
-    extract_objects(mask, 1)
+    extract_objects(mask, output_name, 1)
