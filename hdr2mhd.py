@@ -84,7 +84,7 @@ def writeMhdFile(mhd_name, fields):
 
         tform_txt = ""
         for v in tmat:
-            tform_txt = tform_txt + f" {v:.4g}"
+            tform_txt = tform_txt + f" {v:.6g}"
         print(tform_txt)
         print("TransformMatrix =", tform_txt, file=f_out)
 
