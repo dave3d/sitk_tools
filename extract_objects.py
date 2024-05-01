@@ -1,10 +1,13 @@
 #! /usr/bin/env python
 
 import sys
+import argparse
 import SimpleITK as sitk
 
 
-def extract_objects(input_mask, output_name="mask", n=1, kernel_radius=5):
+def extract_objects(
+    input_mask, output_name="mask", n=1, compactness=1.0, kernel_radius=5
+):
     """Given an mask image, seperate out the N largest objects.
     The function returns a list of mask images for these extracted
     objects."""
@@ -13,6 +16,9 @@ def extract_objects(input_mask, output_name="mask", n=1, kernel_radius=5):
     shape = sitk.LabelShapeStatisticsImageFilter()
     shape.Execute(objs)
     counts = {}
+
+    xdim = input_mask.GetWidth()
+    ydim = input_mask.GetHeight()
 
     for i in range(1, shape.GetNumberOfLabels() + 1):
         counts[i] = shape.GetNumberOfPixels(i)
@@ -30,6 +36,15 @@ def extract_objects(input_mask, output_name="mask", n=1, kernel_radius=5):
         count = sorted_counts[obj_id]
         print(obj_id, count)
 
+        bounds = shape.GetBoundingBox(obj_id)
+        print("\nBounds:", bounds)
+        xc = bounds[3] / xdim
+        yc = bounds[4] / ydim
+        print("Compactness:", xc, yc)
+        if xc > compactness or yc > compactness:
+            print("Skipping object")
+            continue
+
         # select out the object's voxels
         obj_vol = objs == obj_id
 
@@ -44,13 +59,66 @@ def extract_objects(input_mask, output_name="mask", n=1, kernel_radius=5):
         sitk.WriteImage(obj_vol, obj_name)
 
 
+def parse_args():
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("filenames", nargs="*")
+
+    parser.add_argument(
+        "--num",
+        "-n",
+        action="store",
+        dest="n",
+        type=int,
+        default=1,
+        help="number of largest objects to extract",
+    )
+
+    parser.add_argument(
+        "--compact",
+        "-c",
+        action="store",
+        dest="compact",
+        type=float,
+        default=1.0,
+        help="compactness factor",
+    )
+
+    parser.add_argument(
+        "--output",
+        "-o",
+        action="store",
+        dest="output",
+        default="",
+        help="output name",
+    )
+
+    parser.add_argument(
+        "--radius",
+        "-r",
+        action="store",
+        dest="radius",
+        type=int,
+        default=5,
+        help="radius for binary fill hole filter",
+    )
+
+    args = parser.parse_args()
+    return args
+
+
 if __name__ == "__main__":
 
-    mask_name = sys.argv[1]
+    args = parse_args()
 
-    output_name = "mask"
-    if len(sys.argv) > 2:
-        output_name = sys.argv[2]
+    mask_name = args.filenames[0]
+
+    if len(args.output) > 0:
+        output_name = args.output
+    else:
+        words = mask_name.split(".")
+        output_name = words[0] + ".obj"
 
     mask = sitk.ReadImage(mask_name)
-    extract_objects(mask, output_name, 1)
+
+    extract_objects(mask, output_name, args.n, args.compact, args.radius)
