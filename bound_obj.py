@@ -1,12 +1,15 @@
 #! /usr/bin/env python
 
+"""Script to find the bounding box of an object in a binary image."""
 
 import sys
 import SimpleITK as sitk
 
 
-def bound_obj(img, threshold=1.0):
-    img2 = img >= threshold
+def bound_obj(input_image, threshold=1.0):
+    """Find the bounding box of an object in a binary image."""
+
+    img2 = input_image >= threshold
     stats = sitk.LabelShapeStatisticsImageFilter()
     stats.Execute(img2)
 
@@ -24,9 +27,9 @@ def bound_obj(img, threshold=1.0):
 if __name__ == "__main__":
 
     img_name = sys.argv[1]
-    threshold = 1.0
+    THRESHOLD = 1.0
     if len(sys.argv) > 2:
-        threshold = float(sys.argv[2])
+        THRESHOLD = float(sys.argv[2])
 
     img = sitk.ReadImage(img_name)
-    bound_obj(img, threshold)
+    bound_obj(img, THRESHOLD)
