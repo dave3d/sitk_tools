@@ -1,5 +1,6 @@
 #! /usr/bin/env python
 
+""" Script to merge a bunch of slice images into a volume """
 import sys
 import glob
 import pickle
@@ -20,6 +21,7 @@ root_dir = "PET-PBI-05/2023-06-21_Kumar_FR1_D1"
 slice_dir = root_dir + "/masks"
 metadata_file = root_dir + "/slices/volume.pkl"
 
+output_name = "mask.nii.gz"
 
 def merge_slices(
     slice_dir, metadata_file="", output_name="mask.nii.gz", slice_format="slice*.nii.gz"
@@ -75,8 +77,10 @@ if __name__ == "__main__":
 
         if len(sys.argv) > 2:
             metadata_file = sys.argv[2]
+            if len(sys.argv) > 3:
+                output_name = sys.argv[3]
         else:
             # we have slice directory but no metadata file in the arguments
             metadata_file = ""
 
-    merge_slices(slice_dir, metadata_file)
+    merge_slices(slice_dir, metadata_file, output_name)
