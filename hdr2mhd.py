@@ -1,5 +1,7 @@
 #! /usr/bin/env python
 
+""" Convert a mouse scan header file to a MetaIO header file """
+
 import sys
 import SimpleITK as sitk
 
