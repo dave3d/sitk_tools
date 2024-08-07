@@ -1,8 +1,7 @@
 #! /usr/bin/env python
 
 
-#  A test script that I wrote to exercise SimpleITK a bit
-#
+"""  A test script that I wrote to exercise SimpleITK a bit """
 
 import platform
 import SimpleITK as sitk

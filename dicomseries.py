@@ -1,5 +1,6 @@
 #! /usr/bin/env python
 
+""" Scan a directory for DICOM series. """
 import sys
 import getopt
 import os
@@ -40,6 +41,7 @@ dicom_tags = [
 
 
 def usage():
+    """ Print script usage """
     print("")
     print("dicomseries.py: [options] dicom_directory")
     print("")
@@ -72,7 +74,7 @@ try:
         ],
     )
 
-except getopt.GetoptErr as err:
+except getopt.GetoptError as err:
     print(str(err))
     usage()
     sys.exit(1)
@@ -154,15 +156,15 @@ for dirname in args:
 
             try:
                 series_description = isr.GetMetaData(0, "0008|103e")
-            except BaseException:
+            except RuntimeError:
                 series_description = "UnknownSeries"
             try:
                 ac_date = isr.GetMetaData(0, "0008|0020")
-            except BaseException:
+            except RuntimeError:
                 ac_date = "UnknownDate"
             try:
                 patient_name = isr.GetMetaData(0, "0010|0010")
-            except BaseException:
+            except RuntimeError:
                 patient_name = "UnknownName"
 
             if len(series_description) and name_src == 1:
@@ -189,7 +191,7 @@ for dirname in args:
                     print(k, v)
                     if len(v):
                         img.SetMetaData(k, v)
-                except BaseException:
+                except RuntimeError:
                     print(k, "not found")
 
             if os.path.exists(outname):

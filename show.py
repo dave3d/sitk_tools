@@ -1,10 +1,9 @@
 #! /usr/bin/env python
 
 
-#  A simple script that uses SimpleITK's Show function to display images
-#  in Fiji/ImageJ, be default.
-#
-import sys
+"""  A simple script that uses SimpleITK's Show function to display images
+  in Fiji/ImageJ, be default. """
+
 import argparse
 import SimpleITK as sitk
 

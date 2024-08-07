@@ -1,11 +1,14 @@
 #! /usr/bin/env python
 
+""" Remove all metadata from an image """
+
 import sys
 import getopt
 import SimpleITK as sitk
 
 
 def usage():
+    """ Print usage """
     print("")
     print("Usage:  removemetadata.py [options] input_file output_file")
     print("")

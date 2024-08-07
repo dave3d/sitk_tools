@@ -1,12 +1,10 @@
 #! /usr/bin/env python
 
-#
-#  Simple script to dump out an image's meta-data dictionary
-#
-
-import SimpleITK as sitk
+"""  Simple script to dump out an image's meta-data dictionary """
 
 import sys
+import SimpleITK as sitk
+
 
 fnames = sys.argv[1:]
 

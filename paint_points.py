@@ -1,5 +1,7 @@
 #! /usr/bin/env python
 
+""" Paint points into an image. """
+
 import SimpleITK as sitk
 
 
