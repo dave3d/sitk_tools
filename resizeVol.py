@@ -1,16 +1,19 @@
 #! /usr/bin/env python
 
+"""
+A script that linearly resamples a volume to a new size.
+If a new size in any dimension is not specified, the size
+is unchanged.
+"""
+
 import sys
 import getopt
 import SimpleITK as sitk
 
-#
-# A script that linearly resamples a volume to a new size.
-# If a new size in any dimension is not specified, the size
-# is unchanged.
 
 
 def resizeVol(vol, newsize):
+    """ Resize a volume to a new size using linear interpolation. """
     size = vol.GetSize()
     dims = len(size)
     if dims < len(newsize):
@@ -26,7 +29,7 @@ def resizeVol(vol, newsize):
 
     newspacing = []
 
-    for i in range(len(size)):
+    for i in range(dims):
         newspacing.append(size[i] * spacing[i] / newsize[i])
 
     vol2 = sitk.Resample(
@@ -40,9 +43,10 @@ def resizeVol(vol, newsize):
 #
 if __name__ == "__main__":
     verbose = False
-    newsize = [1000000, 1000000, 1000000]
+    s2 = [1000000, 1000000, 1000000]
 
     def usage():
+        """ Script usage """
         print("")
         print("resizeVol.py [options] input_volume output_volume")
         print("")
@@ -67,15 +71,15 @@ if __name__ == "__main__":
         elif o in ("-v", "--verbose"):
             verbose = True
         elif o in ("-x", "--x"):
-            newsize[0] = int(a)
+            s2[0] = int(a)
         elif o in ("-y", "--y"):
-            newsize[1] = int(a)
+            s2[1] = int(a)
         elif o in ("-z", "--z"):
-            newsize[2] = int(a)
+            s2[2] = int(a)
         else:
             assert False, "unhandled option"
 
-    print(newsize)
+    print(s2)
 
     if len(args) < 2:
         usage()
@@ -89,20 +93,20 @@ if __name__ == "__main__":
         print("Input file: ", inName)
         print("Output file: ", outName)
 
-    vol = sitk.ReadImage(inName)
-    size = vol.GetSize()
-    dims = len(size)
+    invol = sitk.ReadImage(inName)
+    s = invol.GetSize()
+    d = len(s)
 
     # make the number of dimensions match the input image
-    newsize = newsize[:dims]
+    s2 = s2[:d]
 
-    for i in range(dims):
-        if newsize[i] == 1000000:
-            newsize[i] = size[i]
+    for j in range(d):
+        if s2[j] == 1000000:
+            s2[j] = s[j]
 
     if verbose:
-        print("New size: ", newsize)
+        print("New size: ", s2)
 
-    outvol = resizeVol(vol, newsize)
+    outvol = resizeVol(invol, s2)
 
     sitk.WriteImage(outvol, outName)
