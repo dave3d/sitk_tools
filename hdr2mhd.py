@@ -1,19 +1,30 @@
 #! /usr/bin/env python
 
-""" Convert a mouse scan header file to a MetaIO header file """
+"""  Script to read a mouse scan header file and produce MetaIO header file
+
+  I think the scans are in a variant of Analyze or Nifti files.
+  They have '.hdr' file and a '.img' file.  Unlike Analyze or Nifti,
+  the header files are text.
+"""
 
 import sys
 import SimpleITK as sitk
 
-#  Script to read a mouse scan header file and produce MetaIO header file
-#
-#  I think the scans are in a variant of Analyze or Nifti files.
-#  They have '.hdr' file and a '.img' file.  Unlike Analyze or Nifti,
-#  the header files are text.
+
+# Data type values(integer)
+#   0 - Unknown data type
+#   1 - Byte (8-bits) data type
+#   2 - 2-byte integer - Intel style
+#   3 - 4-byte integer - Intel style
+#   4 - 4-byte float - Intel style
+#   5 - 4-byte float - Sun style
+#   6 - 2-byte integer - Sun style
+#   7 - 4-byte integer - Sun style
 
 
-def parseHdrFile(hdr_name):
-    with open(hdr_name) as f_in:
+def parseHdrFile(header_name):
+    """Parse the header file and return a dictionary of fields"""
+    with open(header_name, "rb") as f_in:
         lines = f_in.read().splitlines()
 
     fields = {}
@@ -24,34 +35,16 @@ def parseHdrFile(hdr_name):
             img_name = parts[-1]
             fields["file_name"] = img_name
 
-        elif words[0] == "data_type":
-            # Data type (integer)
-            #   0 - Unknown data type
-            #   1 - Byte (8-bits) data type
-            #   2 - 2-byte integer - Intel style
-            #   3 - 4-byte integer - Intel style
-            #   4 - 4-byte float - Intel style
-            #   5 - 4-byte float - Sun style
-            #   6 - 2-byte integer - Sun style
-            #   7 - 4-byte integer - Sun style
-
-            data_type = int(words[1])
-            fields["data_type"] = data_type
-
-        elif words[0] == "number_of_dimensions":
-            fields["number_of_dimensions"] = int(words[1])
-        elif words[0] == "x_dimension":
-            fields[words[0]] = int(words[1])
-        elif words[0] == "y_dimension":
-            fields[words[0]] = int(words[1])
-        elif words[0] == "z_dimension":
+        elif words[0] in (
+            "data_type",
+            "number_of_dimensions",
+            "x_dimension",
+            "y_dimension",
+            "z_dimension",
+        ):
             fields[words[0]] = int(words[1])
 
-        elif words[0] == "pixel_size_x":
-            fields[words[0]] = float(words[1])
-        elif words[0] == "pixel_size_y":
-            fields[words[0]] = float(words[1])
-        elif words[0] == "pixel_size_z":
+        elif words[0] in ("pixel_size_x", "pixel_size_y", "pixel_size_z"):
             fields[words[0]] = float(words[1])
 
         elif words[0] == "study_identifier":
@@ -68,8 +61,9 @@ def parseHdrFile(hdr_name):
     return fields
 
 
-def writeMhdFile(mhd_name, fields):
-    with open(mhd_name, "w") as f_out:
+def writeMhdFile(metaio_name, fields):
+    """Write the MetaIO header file"""
+    with open(metaio_name, "wb") as f_out:
         print("ObjectType = Image", file=f_out)
         print("NDims =", fields["number_of_dimensions"], file=f_out)
         print("BinaryData = True", file=f_out)
@@ -115,36 +109,37 @@ def writeMhdFile(mhd_name, fields):
 
         if dt == 1:
             print("ElementType = MET_UCHAR", file=f_out)
-        elif (dt == 2) or (dt == 6):
+        elif dt in (2, 6):
             print("ElementType = MET_SHORT", file=f_out)
-        elif (dt == 3) or (dt == 7):
+        elif dt in (3, 7):
             print("ElementType = MET_INT", file=f_out)
-        elif (dt == 4) or (dt == 5):
+        elif dt in (4, 5):
             print("ElementType = MET_FLOAT", file=f_out)
 
         print("ElementDataFile =", fields["file_name"], file=f_out)
 
 
 def usage():
+    """Print the usage message"""
     print("hdr2vol.py input_file.hdr [output_file.mhd]")
 
 
 if __name__ == "__main__":
     try:
         hdr_name = sys.argv[1]
-    except BaseException:
+    except IndexError:
         usage()
         sys.exit(1)
 
     try:
         mhd_name = sys.argv[2]
-    except BaseException:
+    except IndexError:
         if hdr_name.endswith(".hdr"):
             mhd_name = hdr_name.replace(".hdr", ".mhd")
         else:
             mhd_name = hdr_name + ".mhd"
 
-    fields = parseHdrFile(hdr_name)
-    print(fields)
+    hdr_fields = parseHdrFile(hdr_name)
+    print(hdr_fields)
 
-    writeMhdFile(mhd_name, fields)
+    writeMhdFile(mhd_name, hdr_fields)

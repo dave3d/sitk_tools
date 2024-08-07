@@ -18,24 +18,26 @@ import SimpleITK as sitk
 
 # test input
 root_dir = "PET-PBI-05/2023-06-21_Kumar_FR1_D1"
-slice_dir = root_dir + "/masks"
-metadata_file = root_dir + "/slices/volume.pkl"
+sd = root_dir + "/masks"
+md_file = root_dir + "/slices/volume.pkl"
 
-output_name = "mask.nii.gz"
+out_name = "mask.nii.gz"
+
 
 def merge_slices(
     slice_dir, metadata_file="", output_name="mask.nii.gz", slice_format="slice*.nii.gz"
 ):
+    """Merge a bunch of slice images into a volume"""
 
     metadataFlag = False
 
     if len(metadata_file) > 0:
         try:
-            fp = open(metadata_file, "rb")
-            metadata = pickle.load(fp)
+            with open(metadata_file, "rb") as fp:
+                metadata = pickle.load(fp)
             print(metadata)
             metadataFlag = True
-        except:
+        except IOError:
             print("No metadata file")
 
     print(slice_dir)
@@ -73,14 +75,14 @@ def merge_slices(
 if __name__ == "__main__":
 
     if len(sys.argv) > 1:
-        slice_dir = sys.argv[1]
+        sd = sys.argv[1]
 
         if len(sys.argv) > 2:
-            metadata_file = sys.argv[2]
+            md_file = sys.argv[2]
             if len(sys.argv) > 3:
-                output_name = sys.argv[3]
+                out_name = sys.argv[3]
         else:
             # we have slice directory but no metadata file in the arguments
-            metadata_file = ""
+            md_file = ""
 
-    merge_slices(slice_dir, metadata_file, output_name)
+    merge_slices(sd, md_file, out_name)
