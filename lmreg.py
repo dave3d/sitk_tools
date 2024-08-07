@@ -1,8 +1,10 @@
 #! /usr/bin/env python
 
-import SimpleITK as sitk
+""" Landmark registration using SimpleITK. """
+
 import sys
 import argparse
+import SimpleITK as sitk
 from paint_points import *
 
 
@@ -25,7 +27,7 @@ def flatten_point_list(pts):
 def read_points(filename):
     """Read a points file in Elastix format."""
     pts = []
-    with open(filename, "r") as f:
+    with open(filename, "r", encoding='utf-8') as f:
         lines = f.readlines()
         if len(lines) != 6:
             print(filename, "seems wonky")
@@ -47,15 +49,15 @@ def read_points(filename):
     return pts
 
 
-def compute_transform(fixed_pts, moving_pts, threeD=False):
+def compute_transform(fix_pts, mov_pts, threeD=False):
     """Do the actual landmark registration."""
 
     landmark_initializer = sitk.LandmarkBasedTransformInitializerFilter()
-    flist = flatten_point_list(fixed_pts)
+    flist = flatten_point_list(fix_pts)
     # print(flist)
 
     landmark_initializer.SetFixedLandmarks(flist)
-    landmark_initializer.SetMovingLandmarks(flatten_point_list(moving_pts))
+    landmark_initializer.SetMovingLandmarks(flatten_point_list(mov_pts))
 
     if threeD:
         transform = sitk.AffineTransform(3)
@@ -63,19 +65,20 @@ def compute_transform(fixed_pts, moving_pts, threeD=False):
         transform = sitk.AffineTransform(2)
 
     # Compute the transform.
-    output_transform = landmark_initializer.Execute(transform)
+    output_tform = landmark_initializer.Execute(transform)
 
-    print("\n", output_transform)
-    return output_transform
+    print("\n", output_tform)
+    return output_tform
 
 
 def create_overlay(fix_pts, mov_pts, tfm, fix_img, mov_res_img):
-    tformed_pts = []
+    """ Create an overlay image of the fixed and moving points. """
+    transformed_pts = []
     inv_tfm = tfm.GetInverse()
-    for pt in mov_pts:
-        tformed_pts.append(inv_tfm.TransformPoint(pt))
+    for p in mov_pts:
+        transformed_pts.append(inv_tfm.TransformPoint(p))
 
-    # print("Transformed points:", tformed_pts)
+    # print("Transformed points:", transformed_pts)
 
     chan = []
     for i in range(3):
@@ -90,11 +93,12 @@ def create_overlay(fix_pts, mov_pts, tfm, fix_img, mov_res_img):
     # print(fix_pts)
     sum_img = paint_points(sum_img, fix_pts, channel=0)
     # print(tformed_pts)
-    sum_img = paint_points(sum_img, tformed_pts, channel=1)
+    sum_img = paint_points(sum_img, transformed_pts, channel=1)
     return sum_img
 
 
 def remove_any_suffix(x):
+    """ Remove any suffix from a file name. """
     i = x.rfind(".")
     if i == -1:
         return x
@@ -102,6 +106,7 @@ def remove_any_suffix(x):
 
 
 def parseargs():
+    """ Parse the command line arguments. """
     parser = argparse.ArgumentParser()
 
     parser.add_argument("fixed_pts")
@@ -161,15 +166,16 @@ def parseargs():
         dest="show",
         help="Show images",
     )
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()
 
 
 def usage():
+    """Print usage information."""
     print("lmreg.py [options] fixed.pts moving.pts [output.tform]")
 
 
 def make_points_3d(pts):
+    """Make sure all points are 3D."""
     new_pts = []
     for p in pts:
         if len(p) == 2:
@@ -186,7 +192,7 @@ if __name__ == "__main__":
     fixed_pts = read_points(args.fixed_pts)
     moving_pts = read_points(args.moving_pts)
 
-    if args.three == True:
+    if args.three:
         fixed_pts = make_points_3d(fixed_pts)
         moving_pts = make_points_3d(moving_pts)
 
@@ -226,11 +232,11 @@ if __name__ == "__main__":
 
             print("Writing resample moving image:", result_name)
             sitk.WriteImage(output_img, result_name)
-        except BaseException:
+        except RuntimeError:
             print("No image resampling done")
             sys.exit()
 
-        sum_img = create_overlay(
+        sum_image = create_overlay(
             fixed_pts, moving_pts, output_transform, fixed_img, output_img
         )
 
@@ -238,10 +244,10 @@ if __name__ == "__main__":
             overlay_name = args.overlay
         else:
             overlay_name = base_name + "-overlay.png"
-        sitk.WriteImage(sum_img, overlay_name)
+        sitk.WriteImage(sum_image, overlay_name)
 
-        if args.show == True:
-            sitk.Show(sum_img, "sum")
+        if args.show:
+            sitk.Show(sum_image, "sum")
             sitk.Show(fixed_img, "fixed")
             sitk.Show(moving_img, "moving")
             sitk.Show(output_img, "output")
