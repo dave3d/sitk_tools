@@ -5,7 +5,7 @@
 import sys
 import argparse
 import SimpleITK as sitk
-from paint_points import *
+import paint_points
 
 
 #
@@ -91,9 +91,9 @@ def create_overlay(fix_pts, mov_pts, tfm, fix_img, mov_res_img):
     # print(sum_img)
 
     # print(fix_pts)
-    sum_img = paint_points(sum_img, fix_pts, channel=0)
+    sum_img = paint_points.paint_points(sum_img, fix_pts, channel=0)
     # print(tformed_pts)
-    sum_img = paint_points(sum_img, transformed_pts, channel=1)
+    sum_img = paint_points.paint_points(sum_img, transformed_pts, channel=1)
     return sum_img
 
 
