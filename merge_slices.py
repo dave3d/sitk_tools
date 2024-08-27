@@ -37,7 +37,7 @@ def merge_slices(
                 metadata = pickle.load(fp)
             print(metadata)
             metadataFlag = True
-        except IOError:
+        except OSError:
             print("No metadata file")
 
     print(slice_dir)
