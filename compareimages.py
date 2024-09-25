@@ -11,7 +11,7 @@ import SimpleITK as sitk
 
 
 def printStats(img, name):
-    """ Print out the stats of the given image. """
+    """Print out the stats of the given image."""
     stats = sitk.StatisticsImageFilter()
     stats.Execute(img)
     print("\n", name)
@@ -25,8 +25,8 @@ def printStats(img, name):
 # Compute a difference image between two images, and then print
 # the stats of that difference image.
 def compareImages(img1, name1, img2, name2):
-    """ Compute a difference image between two images, and then print
-        the stats of that difference image. """
+    """Compute a difference image between two images, and then print
+    the stats of that difference image."""
     print("\nComparing", name1, "and", name2)
     diff_img = img1 - img2
     printStats(diff_img, "diff")

@@ -41,7 +41,7 @@ dicom_tags = [
 
 
 def usage():
-    """ Print script usage """
+    """Print script usage"""
     print("")
     print("dicomseries.py: [options] dicom_directory")
     print("")

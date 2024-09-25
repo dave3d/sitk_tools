@@ -11,9 +11,8 @@ import getopt
 import SimpleITK as sitk
 
 
-
 def resizeVol(vol, newsize):
-    """ Resize a volume to a new size using linear interpolation. """
+    """Resize a volume to a new size using linear interpolation."""
     size = vol.GetSize()
     dims = len(size)
     if dims < len(newsize):
@@ -46,7 +45,7 @@ if __name__ == "__main__":
     s2 = [1000000, 1000000, 1000000]
 
     def usage():
-        """ Script usage """
+        """Script usage"""
         print("")
         print("resizeVol.py [options] input_volume output_volume")
         print("")

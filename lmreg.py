@@ -27,7 +27,7 @@ def flatten_point_list(pts):
 def read_points(filename):
     """Read a points file in Elastix format."""
     pts = []
-    with open(filename, "r", encoding='utf-8') as f:
+    with open(filename, "r", encoding="utf-8") as f:
         lines = f.readlines()
         if len(lines) != 6:
             print(filename, "seems wonky")
@@ -72,7 +72,7 @@ def compute_transform(fix_pts, mov_pts, threeD=False):
 
 
 def create_overlay(fix_pts, mov_pts, tfm, fix_img, mov_res_img):
-    """ Create an overlay image of the fixed and moving points. """
+    """Create an overlay image of the fixed and moving points."""
     transformed_pts = []
     inv_tfm = tfm.GetInverse()
     for p in mov_pts:
@@ -98,7 +98,7 @@ def create_overlay(fix_pts, mov_pts, tfm, fix_img, mov_res_img):
 
 
 def remove_any_suffix(x):
-    """ Remove any suffix from a file name. """
+    """Remove any suffix from a file name."""
     i = x.rfind(".")
     if i == -1:
         return x
@@ -106,7 +106,7 @@ def remove_any_suffix(x):
 
 
 def parseargs():
-    """ Parse the command line arguments. """
+    """Parse the command line arguments."""
     parser = argparse.ArgumentParser()
 
     parser.add_argument("fixed_pts")

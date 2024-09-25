@@ -8,7 +8,7 @@ import SimpleITK as sitk
 
 
 def usage():
-    """ Print usage """
+    """Print usage"""
     print("")
     print("Usage:  removemetadata.py [options] input_file output_file")
     print("")

@@ -4,6 +4,7 @@
 import argparse
 import SimpleITK as sitk
 
+
 def extract_object(obj_id, vol, kernel_radius, output_name):
     """Extract the object with the given ID from the volume and write it to a file."""
     obj_vol = vol == obj_id
@@ -58,7 +59,7 @@ def extract_objects(
 
 
 def parse_args():
-    """ Parse command line arguments. """
+    """Parse command line arguments."""
     parser = argparse.ArgumentParser()
 
     parser.add_argument("filenames", nargs="*")
