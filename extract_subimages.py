@@ -79,4 +79,4 @@ if __name__ == "__main__":
         print(name, num)
 
         input_image = sitk.ReadImage(filename)
-        extract_subimages(input_image, args.output_dir + "/" + name, num)
+        extract_subimages(input_image, args.output_dir + "/" + name, num, args.min_size)
