@@ -8,16 +8,16 @@ import histo
 
 
 def compute_corners(img):
-    """ Compute the physical coordinates of the corners of the volume """
+    """Compute the physical coordinates of the corners of the volume"""
     sz = img.GetSize()
     corners = []
     pt_corners = []
     for z in (0, 1):
-        zc = (sz[2]-1) * z
+        zc = (sz[2] - 1) * z
         for y in (0, 1):
-            yc = (sz[1]-1) * y
+            yc = (sz[1] - 1) * y
             for x in (0, 1):
-                xc = (sz[0]-1) * x
+                xc = (sz[0] - 1) * x
                 c = [xc, yc, zc]
                 corners.append(c)
     for c in corners:
@@ -28,7 +28,7 @@ def compute_corners(img):
 
 
 def compute_bounds(img):
-    """ Compute the physical bounds of the volume """
+    """Compute the physical bounds of the volume"""
     corners = compute_corners(img)
     mins = [1e9, 1e9, 1e9]
     maxs = [-1e9, -1e9, -1e9]
@@ -41,7 +41,7 @@ def compute_bounds(img):
 
 
 def query_vol(img, histoFlag=False):
-    """ Query volume information """
+    """Query volume information"""
     print()
     print("File:      ", sys.argv[1])
     print("Pixel type:", img.GetPixelIDTypeAsString())
@@ -59,9 +59,10 @@ def query_vol(img, histoFlag=False):
     if histoFlag:
         histo.histo(img)
 
+
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage: ", sys.argv[0], " <input>")
-    img = sitk.ReadImage(sys.argv[1])
+    in_img = sitk.ReadImage(sys.argv[1])
 
-    query_vol(img, True)
+    query_vol(in_img, True)
