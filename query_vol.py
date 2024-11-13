@@ -52,6 +52,8 @@ def query_vol(img, histoFlag=False):
     stats = sitk.StatisticsImageFilter()
     stats.Execute(img)
     print("Range:", stats.GetMinimum(), stats.GetMaximum())
+    print("Mean:", stats.GetMean())
+    print("StdDev:", stats.GetSigma())
     print()
     compute_bounds(img)
 
