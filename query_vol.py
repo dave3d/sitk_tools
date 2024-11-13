@@ -43,7 +43,6 @@ def compute_bounds(img):
 def query_vol(img, histoFlag=False):
     """Query volume information"""
     print()
-    print("File:      ", sys.argv[1])
     print("Pixel type:", img.GetPixelIDTypeAsString())
     print("Size:      ", img.GetSize())
     print("Spacing:   ", img.GetSpacing())
@@ -65,4 +64,6 @@ if __name__ == "__main__":
         print("Usage: ", sys.argv[0], " <input>")
     in_img = sitk.ReadImage(sys.argv[1])
 
+    print()
+    print("File:      ", sys.argv[1])
     query_vol(in_img, True)
