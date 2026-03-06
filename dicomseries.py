@@ -145,6 +145,7 @@ def scan_directory(dirname: str, args: argparse.Namespace) -> None:
 
 
 def parse_args() -> argparse.Namespace:
+    """Parse command-line arguments."""
     parser = argparse.ArgumentParser(
         description="Scan a directory for DICOM series and optionally convert them."
     )
@@ -171,6 +172,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
+    """Entry point: parse arguments and scan/convert DICOM series."""
     args = parse_args()
 
     log_level = logging.WARNING
