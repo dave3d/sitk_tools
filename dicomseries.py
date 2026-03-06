@@ -1,35 +1,24 @@
 #! /usr/bin/env python
 
-""" Scan a directory for DICOM series. """
-import sys
-import getopt
+"""Scan a directory for DICOM series.
+
+Can also convert all series to other formats with the '--convert' flag.
+
+In conversion mode, the name of the output volume is derived from either the
+series description (--name desc) or the series id (--name series).
+Series description is the default.
+
+The output volume type is specified with the suffix option. Default is '.nrrd'.
+"""
+
+import argparse
+import logging
 import os
+
 import SimpleITK as sitk
 
-#
-#  Scan a directory for DICOM series.
-#
-#  Can also convert all series to other formats with
-#  the '--convert' flag.
-#
-#  In conversion mode, the name of the output volume is derived from
-#  either the series description (--name 1) or the series id (--name 2).
-#  Series description is the default.
-#
-#  The output volume type is specified with the suffix option.
-#  Default is '.nrrd'.
-#
-
-verbose = 0
-recFlag = False
-suffix = ".nrrd"
-min_z = 20
-convertFlag = False
-name_src = 1
-dictFlag = False
-
-# tags of interest
-dicom_tags = [
+# Tags of interest to copy into output volumes
+DICOM_TAGS = [
     "0008|0020",  # acquisition date
     "0008|0030",  # study time
     "0008|103e",  # series description
@@ -40,175 +29,171 @@ dicom_tags = [
 ]
 
 
-def usage():
-    """Print script usage"""
-    print("")
-    print("dicomseries.py: [options] dicom_directory")
-    print("")
-    print("  -h, --help       This message")
-    print("  -v, --verbose    Increase verbosity level")
-    print("  -r, --recursive  Search directory recursively")
-    print("  -c, --convert    Convert series to volumes")
-    print("  -d, --dict       Dump the metadata dictionary")
-    print("  -s string, --suffix string    Output volume suffix")
-    print("  -t int,  --thickness   Min Z thickness for series conversion")
-    print(
-        "  -n source,  --name source   Source of the output name",
-        "(seriesid or description)",
-    )
+def get_meta(reader: sitk.ImageSeriesReader, key: str, default: str = "Unknown") -> str:
+    """Safely retrieve a metadata value from a series reader."""
+    try:
+        return reader.GetMetaData(0, key)
+    except RuntimeError:
+        return default
 
 
-try:
-    opts, args = getopt.getopt(
-        sys.argv[1:],
-        "vhrcds:t:n:",
-        [
-            "verbose",
-            "help",
-            "recursive",
-            "convert",
-            "dict",
-            "suffix=",
-            "thickness=",
-            "name=",
-        ],
-    )
+def sanitize_name(name: str) -> str:
+    """Replace spaces and slashes in a name to make it filesystem-safe."""
+    name = name.rstrip()
+    return name.translate(name.maketrans(" /", "_-", "*"))
 
-except getopt.GetoptError as err:
-    print(str(err))
-    usage()
-    sys.exit(1)
 
-for o, a in opts:
-    if o in ("-v", "--verbose"):
-        verbose = verbose + 1
-    elif o in ("-h", "--help"):
-        usage()
-        sys.exit()
-    elif o in ("-r", "--recursive"):
-        recFlag = True
-    elif o in ("-c", "--convert"):
-        convertFlag = True
-    elif o in ("-d", "--dict"):
-        dictFlag = True
-    elif o in ("-s", "--suffix"):
-        suffix = a
-    elif o in ("-t", "--thickness"):
-        min_z = int(a)
-    elif o in ("-n", "--name"):
-        if a.startswith("desc"):
-            name_src = 1
-        if a.startswith("series"):
-            name_src = 2
+def dump_metadata_from_reader(reader: sitk.ImageSeriesReader) -> None:
+    """Dump the metadata dictionary from slice 0 of a loaded series reader."""
+    logging.info("Dumping the meta data dictionary")
+    for k in reader.GetMetaDataKeys(0):
+        v = reader.GetMetaData(0, k)
+        truncated = v[:99] + " ..." if len(v) > 255 else v
+        print(f"  {k}: {truncated}")
 
+
+def dump_metadata_from_file(fname: str) -> None:
+    """Dump the metadata dictionary from a single DICOM file."""
+    img = sitk.ReadImage(fname)
+    print("Metadata Dictionary")
+    for k in img.GetMetaDataKeys():
+        v = img.GetMetaData(k)
+        truncated = v[:99] + " ..." if len(v) > 255 else v
+        print(f"  {k}: {truncated}")
+
+
+def build_output_name(
+    reader: sitk.ImageSeriesReader,
+    series_id: str,
+    dirname: str,
+    suffix: str,
+    name_src: int,
+) -> str:
+    """Derive the output filename from series metadata or series ID."""
+    series_description = get_meta(reader, "0008|103e", "UnknownSeries")
+    ac_date = get_meta(reader, "0008|0020", "UnknownDate")
+    patient_name = get_meta(reader, "0010|0010", "UnknownName")
+
+    if series_description and name_src == 1:
+        sd = sanitize_name(series_description)
+        pn = sanitize_name(patient_name)
+        name = f"{pn}-{ac_date}-{sd}"
     else:
-        assert False, "unhandled options"
+        name = series_id
 
-dirname = args[0]
+    return os.path.join(dirname, name + suffix)
 
 
-isr = sitk.ImageSeriesReader()
+def process_series(
+    isr: sitk.ImageSeriesReader,
+    series_id: str,
+    fnames: tuple,
+    dirname: str,
+    args: argparse.Namespace,
+) -> None:
+    """Convert a single DICOM series to a volume file."""
+    logging.info("Converting series %s (%d files)", series_id, len(fnames))
 
-print("\ndicomseries.py\n")
+    isr.SetFileNames(fnames)
+    isr.MetaDataDictionaryArrayUpdateOn()
+    isr.LoadPrivateTagsOn()
+    img = isr.Execute()
+    logging.debug("%s", img)
 
-print("recFlag: ", recFlag)
-print("convertFlag: ", convertFlag)
-print("suffix: ", suffix)
-print("min thickness: ", min_z)
+    if args.verbose > 1 or args.dict:
+        dump_metadata_from_reader(isr)
 
-for dirname in args:
-    print("\nDirectory: ", dirname)
-    seriesids = isr.GetGDCMSeriesIDs(dirname)
+    outname = build_output_name(isr, series_id, dirname, args.suffix, args.name_src)
 
-    print("\nSeries IDs")
-    print(seriesids)
-    print("")
+    # Copy the DICOM tags of interest into the output image
+    for k in DICOM_TAGS:
+        try:
+            v = isr.GetMetaData(0, k)
+            if v:
+                img.SetMetaData(k, v)
+                logging.debug("  %s: %s", k, v)
+        except RuntimeError:
+            logging.debug("  %s: not found", k)
 
-    for s in seriesids:
-        fnames = isr.GetGDCMSeriesFileNames(dirname, s, False, recFlag, False)
+    if os.path.exists(outname):
+        logging.warning("%s already exists. Overwriting.", outname)
 
-        print("")
-        print("Series file names")
-        print(s, len(fnames))
-        print(fnames)
+    print(f"Writing {outname}")
+    sitk.WriteImage(img, outname, useCompression=True)
 
-        if convertFlag and len(fnames) >= min_z:
-            print("Do conversion!")
 
-            isr.SetFileNames(fnames)
-            isr.MetaDataDictionaryArrayUpdateOn()
-            isr.LoadPrivateTagsOn()
-            img = isr.Execute()
-            print(img)
+def scan_directory(dirname: str, args: argparse.Namespace) -> None:
+    """Scan a single directory for DICOM series and optionally convert them."""
+    print(f"\nDirectory: {dirname}")
+    isr = sitk.ImageSeriesReader()
+    series_ids = isr.GetGDCMSeriesIDs(dirname)
 
-            if verbose > 1 or dictFlag:
-                # Dump the meta data dictionary
-                print("\nDumping the meta data dictionary\n")
+    print(f"\nSeries IDs ({len(series_ids)} found)")
+    for s in series_ids:
+        print(f"  {s}")
+    print()
 
-                keys = isr.GetMetaDataKeys(0)
+    for s in series_ids:
+        fnames = isr.GetGDCMSeriesFileNames(dirname, s, False, args.recursive, False)
+        print(f"\nSeries: {s}  ({len(fnames)} files)")
+        logging.debug("  Files: %s", fnames)
 
-                for k in keys:
-                    v = isr.GetMetaData(0, k)
-                    if len(v) > 255:
-                        print(k, ": ", v[0:99], " ...")
-                    else:
-                        print(k, ": ", v)
+        if args.convert and len(fnames) >= args.thickness:
+            process_series(isr, s, fnames, dirname, args)
+        elif args.dict and len(fnames) >= args.thickness:
+            dump_metadata_from_file(fnames[0])
 
-            try:
-                series_description = isr.GetMetaData(0, "0008|103e")
-            except RuntimeError:
-                series_description = "UnknownSeries"
-            try:
-                ac_date = isr.GetMetaData(0, "0008|0020")
-            except RuntimeError:
-                ac_date = "UnknownDate"
-            try:
-                patient_name = isr.GetMetaData(0, "0010|0010")
-            except RuntimeError:
-                patient_name = "UnknownName"
 
-            if len(series_description) and name_src == 1:
-                sd = series_description.rstrip()
-                d = sd.maketrans(" /", "_-", "*")
-                sd = sd.translate(d)
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Scan a directory for DICOM series and optionally convert them."
+    )
+    parser.add_argument("directories", nargs="+", metavar="dicom_directory",
+                        help="One or more directories to scan for DICOM series")
+    parser.add_argument("-v", "--verbose", action="count", default=0,
+                        help="Increase verbosity level (use -vv for debug)")
+    parser.add_argument("-r", "--recursive", action="store_true",
+                        help="Search directories recursively")
+    parser.add_argument("-c", "--convert", action="store_true",
+                        help="Convert series to volumes")
+    parser.add_argument("-d", "--dict", action="store_true",
+                        help="Dump the metadata dictionary")
+    parser.add_argument("-s", "--suffix", default=".nrrd", metavar="string",
+                        help="Output volume suffix (default: .nrrd)")
+    parser.add_argument("-t", "--thickness", type=int, default=20, metavar="int",
+                        help="Minimum Z thickness (slices) for conversion (default: 20)")
+    parser.add_argument(
+        "-n", "--name", dest="name_src", default="desc",
+        choices=["desc", "series"],
+        help="Source for output filename: 'desc' (series description) or 'series' (series ID)",
+    )
+    return parser.parse_args()
 
-                # if ac_date:
-                #    name = ac_date + "-" + sd
-                # name = s + "-" + sd
 
-                pn = patient_name.rstrip()
-                pn = pn.translate(d)
+def main() -> None:
+    args = parse_args()
 
-                name = pn + "-" + ac_date + "-" + sd
-                outname = dirname + "/" + name + suffix
-            else:
-                outname = dirname + "/" + s + suffix
+    log_level = logging.WARNING
+    if args.verbose == 1:
+        log_level = logging.INFO
+    elif args.verbose >= 2:
+        log_level = logging.DEBUG
+    logging.basicConfig(level=log_level, format="%(levelname)s: %(message)s")
 
-            # copy the dicom tags of interest
-            for k in dicom_tags:
-                try:
-                    v = isr.GetMetaData(0, k)
-                    print(k, v)
-                    if len(v):
-                        img.SetMetaData(k, v)
-                except RuntimeError:
-                    print(k, "not found")
+    # Map name choice to an integer for internal use
+    args.name_src = 1 if args.name_src == "desc" else 2
 
-            if os.path.exists(outname):
-                print("WARNING:", outname, "already exists.  Overwriting")
-            print("\nWriting", outname)
-            sitk.WriteImage(img, outname, useCompression=True)
+    print("\ndicomseries.py\n")
+    logging.info("recursive:  %s", args.recursive)
+    logging.info("convert:    %s", args.convert)
+    logging.info("suffix:     %s", args.suffix)
+    logging.info("min thickness: %d", args.thickness)
 
-        else:
-            if dictFlag and len(fnames) > min_z:
-                print("Metadata Dictionary")
-                # dump the dictionary of the first file in the series
-                img1 = sitk.ReadImage(fnames[0])
-                keys = img1.GetMetaDataKeys()
-                for k in keys:
-                    v = img1.GetMetaData(k)
-                    if len(v) > 255:
-                        print(k, ": ", v[0:99], " ...")
-                    else:
-                        print(k, ": ", v)
-    print("")
+    for dirname in args.directories:
+        scan_directory(dirname, args)
+
+    print()
+
+
+if __name__ == "__main__":
+    main()
