@@ -1,4 +1,8 @@
 #! /usr/bin/env python
+# /// script
+# requires-python = ">=3.8"
+# dependencies = []
+# ///
 
 """  vector.py -- Basic vector math routines """
 

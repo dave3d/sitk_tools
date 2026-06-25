@@ -1,4 +1,10 @@
 #! /usr/bin/env python
+# /// script
+# requires-python = ">=3.8"
+# dependencies = [
+#   "SimpleITK",
+# ]
+# ///
 
 
 """  A simple script that uses SimpleITK's Show function to display images

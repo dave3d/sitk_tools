@@ -1,4 +1,11 @@
 #! /usr/bin/env python3
+# /// script
+# requires-python = ">=3.8"
+# dependencies = [
+#   "SimpleITK",
+#   "numpy",
+# ]
+# ///
 
 """ histo.py: Compute histogram of an image """
 

@@ -1,4 +1,10 @@
 #! /usr/bin/env python
+# /// script
+# requires-python = ">=3.8"
+# dependencies = [
+#   "SimpleITK",
+# ]
+# ///
 
 """ query_vol.py: Query volume information """
 

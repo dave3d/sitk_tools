@@ -1,4 +1,10 @@
 #! /usr/bin/env python
+# /// script
+# requires-python = ">=3.8"
+# dependencies = [
+#   "SimpleITK",
+# ]
+# ///
 
 """ Script to extract subimages from a color image.
 We assume the background is black. """
