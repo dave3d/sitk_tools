@@ -1,4 +1,10 @@
-#! /usr/bin/env python
+#!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.8"
+# dependencies = [
+#   "SimpleITK",
+# ]
+# ///
 
 """Script to find the bounding box of an object in a binary image."""
 

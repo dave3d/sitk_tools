@@ -1,4 +1,10 @@
-#! /usr/bin/env python
+#!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.8"
+# dependencies = [
+#   "SimpleITK",
+# ]
+# ///
 
 """  Simple script to dump out an image's meta-data dictionary """
 
