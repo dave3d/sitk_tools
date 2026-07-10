@@ -1,8 +1,9 @@
 #! /usr/bin/env python
 # /// script
-# requires-python = ">=3.8"
+# requires-python = ">=3.10"
 # dependencies = [
 #   "SimpleITK",
+#   "numpy",
 # ]
 # ///
 
