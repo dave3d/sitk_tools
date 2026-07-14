@@ -61,6 +61,22 @@ def load_image(path: str) -> sitk.Image:
     return img
 
 
+def _collect_corners(images: list[sitk.Image], rotation: np.ndarray) -> np.ndarray:
+    """Return all bounding-box corner points of each image rotated into the reference frame."""
+    corners = []
+    for img in images:
+        sz = img.GetSize()
+        for ci in (
+            [i, j, k]
+            for i in (0, sz[0] - 1)
+            for j in (0, sz[1] - 1)
+            for k in (0, sz[2] - 1)
+        ):
+            phys = img.TransformIndexToPhysicalPoint(ci)
+            corners.append(rotation.T @ np.array(phys))
+    return np.array(corners)
+
+
 def compute_reference_grid(
     images: list[sitk.Image],
     out_spacing: list[float] | None,
@@ -76,26 +92,10 @@ def compute_reference_grid(
     # Use the direction of the first image as the reference orientation.
     ref_direction = images[0].GetDirection()
 
-    # Build a 3-D rotation matrix from the direction cosines so we can
-    # transform physical corners into the reference frame.
-    D = np.array(ref_direction).reshape(3, 3)
-
-    # Collect physical corners of every image in the reference frame.
-    all_corners = []
-    for img in images:
-        sz = img.GetSize()
-        corners_idx = [
-            [i, j, k]
-            for i in (0, sz[0] - 1)
-            for j in (0, sz[1] - 1)
-            for k in (0, sz[2] - 1)
-        ]
-        for ci in corners_idx:
-            phys = img.TransformIndexToPhysicalPoint(ci)
-            ref_coord = D.T @ np.array(phys)   # rotate into ref frame
-            all_corners.append(ref_coord)
-
-    corners = np.array(all_corners)
+    # Build a 3-D rotation matrix from the direction cosines and collect
+    # all physical bounding-box corners in that reference frame.
+    rotation = np.array(ref_direction).reshape(3, 3)
+    corners = _collect_corners(images, rotation)
     min_pt = corners.min(axis=0)
     max_pt = corners.max(axis=0)
 
@@ -113,12 +113,12 @@ def compute_reference_grid(
     )
 
     # Origin: corner of the bounding box rotated back to physical space.
-    origin = tuple(float(v) for v in (D @ min_pt).tolist())
+    origin = tuple(float(v) for v in (rotation @ min_pt).tolist())
 
     return size, spacing, origin, ref_direction
 
 
-def resample_to_reference(
+def resample_to_reference(  # pylint: disable=too-many-arguments,too-many-positional-arguments
     image: sitk.Image,
     size: tuple[int, ...],
     spacing: tuple[float, ...],
@@ -141,7 +141,7 @@ def resample_to_reference(
     )
 
 
-def stack_images(
+def stack_images(  # pylint: disable=too-many-arguments,too-many-positional-arguments
     images: list[sitk.Image],
     size: tuple[int, ...],
     spacing: tuple[float, ...],
@@ -175,6 +175,7 @@ def stack_images(
 
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
+    """Parse command-line arguments and return the populated Namespace."""
     parser = argparse.ArgumentParser(
         description="Resample an arbitrary set of images into a uniform 3D volume.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -210,6 +211,7 @@ def build_spacing(args: argparse.Namespace) -> list[float] | None:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Entry point: parse arguments, resample inputs, write output."""
     args = parse_args(sys.argv[1:] if argv is None else argv)
 
     if len(args.inputs) < 2:

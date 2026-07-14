@@ -1,18 +1,13 @@
 """
 Tests for resample_to_volume.py
 """
+# pylint: disable=missing-function-docstring,missing-class-docstring
 
-import sys
-import math
-import tempfile
-from pathlib import Path
+import argparse
 
 import pytest
 import numpy as np
 import SimpleITK as sitk
-
-# Make the parent directory importable regardless of how pytest is invoked.
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import resample_to_volume as rtv
 
@@ -21,7 +16,7 @@ import resample_to_volume as rtv
 # Helpers
 # ---------------------------------------------------------------------------
 
-def make_image(
+def make_image(  # pylint: disable=too-many-arguments,too-many-positional-arguments
     size=(10, 10, 10),
     spacing=(1.0, 1.0, 1.0),
     origin=(0.0, 0.0, 0.0),
@@ -73,7 +68,7 @@ class TestLoadImage:
 class TestComputeReferenceGrid:
     def test_single_image_auto_spacing(self):
         img = make_image(size=(10, 10, 10), spacing=(2.0, 2.0, 2.0))
-        size, spacing, origin, direction = rtv.compute_reference_grid([img], None)
+        size, spacing, _, _ = rtv.compute_reference_grid([img], None)
         assert spacing == (2.0, 2.0, 2.0)
         # Grid should cover at least the input extent.
         for i in range(3):
@@ -94,7 +89,7 @@ class TestComputeReferenceGrid:
         """Two non-overlapping images: grid must cover both."""
         img_a = make_image(size=(5, 5, 5), spacing=(1.0, 1.0, 1.0), origin=(0.0, 0.0, 0.0))
         img_b = make_image(size=(5, 5, 5), spacing=(1.0, 1.0, 1.0), origin=(10.0, 10.0, 10.0))
-        size, spacing, origin, _ = rtv.compute_reference_grid([img_a, img_b], [1.0, 1.0, 1.0])
+        size, _, _, _ = rtv.compute_reference_grid([img_a, img_b], [1.0, 1.0, 1.0])
         # Physical extent covered: 0..14 in each axis → need at least 15 voxels.
         for i in range(3):
             assert size[i] >= 15
@@ -167,14 +162,14 @@ class TestResampleToReference:
 
 class TestStackImages:
     def _grid(self, size=(10, 10, 10), spacing=(1.0, 1.0, 1.0)):
-        return dict(
-            size=size,
-            spacing=spacing,
-            origin=(0.0, 0.0, 0.0),
-            direction=identity_direction(),
-            interpolator=sitk.sitkLinear,
-            default_value=0.0,
-        )
+        return {
+            "size": size,
+            "spacing": spacing,
+            "origin": (0.0, 0.0, 0.0),
+            "direction": identity_direction(),
+            "interpolator": sitk.sitkLinear,
+            "default_value": 0.0,
+        }
 
     def test_single_image_passthrough(self):
         img = make_image(size=(10, 10, 10), spacing=(1.0, 1.0, 1.0), fill=3.0)
@@ -188,14 +183,14 @@ class TestStackImages:
                          origin=(0.0, 0.0, 0.0), fill=1.0)
         high = make_image(size=(10, 10, 10), spacing=(1.0, 1.0, 1.0),
                           origin=(20.0, 0.0, 0.0), fill=5.0)
-        g = dict(
-            size=(31, 10, 10),
-            spacing=(1.0, 1.0, 1.0),
-            origin=(0.0, 0.0, 0.0),
-            direction=identity_direction(),
-            interpolator=sitk.sitkLinear,
-            default_value=0.0,
-        )
+        g = {
+            "size": (31, 10, 10),
+            "spacing": (1.0, 1.0, 1.0),
+            "origin": (0.0, 0.0, 0.0),
+            "direction": identity_direction(),
+            "interpolator": sitk.sitkLinear,
+            "default_value": 0.0,
+        }
         out = rtv.stack_images([low, high], **g)
         arr = sitk.GetArrayFromImage(out)
         assert arr.max() == pytest.approx(5.0, abs=0.1)
@@ -217,7 +212,6 @@ class TestStackImages:
 
 class TestBuildSpacing:
     def _args(self, spacing=None, x=None, y=None, z=None):
-        import argparse
         a = argparse.Namespace(spacing=spacing, x=x, y=y, z=z)
         return a
 
