@@ -47,7 +47,7 @@ INTERPOLATORS = {
     "linear":   sitk.sitkLinear,
     "nearest":  sitk.sitkNearestNeighbor,
     "bspline":  sitk.sitkBSpline,
-    "gaussian": sitk.sitkLabelGaussian,
+    "gaussian": sitk.sitkGaussian,
 }
 
 
