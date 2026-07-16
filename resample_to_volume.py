@@ -113,7 +113,7 @@ def compute_reference_grid(
     # Size in voxels to cover the bounding box.
     extent = max_pt - min_pt
     size = tuple(
-        max(1, int(round(extent[i] / spacing[i])) + 1) for i in range(3)
+        max(1, int(np.ceil(extent[i] / spacing[i])) + 1) for i in range(3)
     )
 
     # Origin: corner of the bounding box rotated back to physical space.
