@@ -170,12 +170,11 @@ def stack_images(  # pylint: disable=too-many-arguments,too-many-positional-argu
     if len(resampled) == 1:
         return resampled[0]
 
-    # Cast everything to float32, combine with max, cast back.
-    pixel_id = images[0].GetPixelID()
+    # Combine with max in float32 to avoid precision loss, and keep float output.
     combined = sitk.Cast(resampled[0], sitk.sitkFloat32)
     for r in resampled[1:]:
         combined = sitk.Maximum(combined, sitk.Cast(r, sitk.sitkFloat32))
-    return sitk.Cast(combined, pixel_id)
+    return combined
 
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
