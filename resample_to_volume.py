@@ -141,7 +141,7 @@ def resample_to_reference(  # pylint: disable=too-many-arguments,too-many-positi
         spacing,
         direction,
         default_value,
-        image.GetPixelID(),
+        sitk.sitkFloat32,
     )
 
 
