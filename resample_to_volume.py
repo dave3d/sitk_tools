@@ -104,6 +104,10 @@ def compute_reference_grid(
         # Use the finest spacing across all images (per axis).
         spacings = np.array([img.GetSpacing() for img in images])
         out_spacing = spacings.min(axis=0).tolist()
+    if any(s is None for s in out_spacing) or any(float(s) <= 0 for s in out_spacing):
+        raise ValueError(
+            f"Invalid output spacing {out_spacing}; spacing must be > 0 for all axes."
+        )
     spacing = tuple(float(s) for s in out_spacing)
 
     # Size in voxels to cover the bounding box.
