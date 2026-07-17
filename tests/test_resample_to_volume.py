@@ -300,3 +300,315 @@ class TestMain:
         assert rc == 0
         result = sitk.ReadImage(out)
         assert result.GetDimension() == 3
+
+
+# ---------------------------------------------------------------------------
+# load_image – thickness parameter
+# ---------------------------------------------------------------------------
+
+class TestLoadImageThickness:
+    def test_thickness_sets_z_spacing_for_2d(self, tmp_path):
+        img2d = sitk.Image(8, 8, sitk.sitkFloat32)
+        p = str(tmp_path / "slice.nrrd")
+        sitk.WriteImage(img2d, p)
+        loaded = rtv.load_image(p, thickness=3.5)
+        assert loaded.GetSpacing()[2] == pytest.approx(3.5)
+
+    def test_thickness_ignored_for_3d(self, tmp_path):
+        img3d = make_image(size=(5, 5, 5), spacing=(1.0, 1.0, 2.0))
+        p = str(tmp_path / "vol.nrrd")
+        sitk.WriteImage(img3d, p)
+        loaded = rtv.load_image(p, thickness=9.9)
+        assert loaded.GetSpacing()[2] == pytest.approx(2.0)
+
+
+# ---------------------------------------------------------------------------
+# _dicom_3d_geometry
+# ---------------------------------------------------------------------------
+
+class TestDicom3dGeometry:
+    def _img_with_tags(self, ipp=None, iop=None):
+        img = sitk.Image(8, 8, sitk.sitkFloat32)
+        if ipp is not None:
+            img.SetMetaData("0020|0032", "\\".join(str(v) for v in ipp))
+        if iop is not None:
+            img.SetMetaData("0020|0037", "\\".join(str(v) for v in iop))
+        return img
+
+    def test_reads_ipp_as_origin(self):
+        img = self._img_with_tags(ipp=(10.0, 20.0, 30.0))
+        origin3d, _ = rtv._dicom_3d_geometry(img)
+        assert origin3d == pytest.approx((10.0, 20.0, 30.0))
+
+    def test_identity_iop_gives_identity_direction(self):
+        img = self._img_with_tags(
+            ipp=(0.0, 0.0, 0.0),
+            iop=(1.0, 0.0, 0.0, 0.0, 1.0, 0.0),
+        )
+        _, direction3d = rtv._dicom_3d_geometry(img)
+        assert direction3d == pytest.approx(
+            (1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0)
+        )
+
+    def test_nonidentity_iop_columns_are_physical_axis_directions(self):
+        """Direction matrix columns must be the physical directions of image axes."""
+        # row_cos = physical Z, col_cos = physical X → normal = physical Y
+        img = self._img_with_tags(
+            ipp=(0.0, 0.0, 0.0),
+            iop=(0.0, 0.0, 1.0, 1.0, 0.0, 0.0),
+        )
+        _, d3d = rtv._dicom_3d_geometry(img)
+        d = np.array(d3d).reshape(3, 3)
+        assert d[:, 0] == pytest.approx([0.0, 0.0, 1.0], abs=1e-6)  # col 0 = row_cos
+        assert d[:, 1] == pytest.approx([1.0, 0.0, 0.0], abs=1e-6)  # col 1 = col_cos
+        assert d[:, 2] == pytest.approx([0.0, 1.0, 0.0], abs=1e-6)  # col 2 = normal
+
+    def test_fallback_origin_when_ipp_absent(self):
+        img = sitk.Image(8, 8, sitk.sitkFloat32)
+        img.SetOrigin((5.0, 7.0))
+        origin3d, _ = rtv._dicom_3d_geometry(img)
+        assert origin3d == pytest.approx((5.0, 7.0, 0.0))
+
+    def test_fallback_direction_when_iop_absent(self):
+        img = sitk.Image(8, 8, sitk.sitkFloat32)
+        img.SetMetaData("0020|0032", "0\\0\\0")
+        _, direction3d = rtv._dicom_3d_geometry(img)
+        assert direction3d == pytest.approx(
+            (1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0)
+        )
+
+
+# ---------------------------------------------------------------------------
+# _covered_z_planes
+# ---------------------------------------------------------------------------
+
+class TestCoveredZPlanes:
+    def _grid(self, nz=20, sz=1.0):
+        return {
+            "size": (8, 8, nz),
+            "spacing": (1.0, 1.0, sz),
+            "origin": (0.0, 0.0, 0.0),
+            "direction": identity_direction(),
+        }
+
+    def _slice_at_z(self, z):
+        return make_image(size=(8, 8, 1), spacing=(1.0, 1.0, 1.0),
+                          origin=(0.0, 0.0, z))
+
+    def test_single_slice_at_origin(self):
+        covered = rtv._covered_z_planes([self._slice_at_z(0.0)], **self._grid())
+        assert covered == [0]
+
+    def test_slice_maps_to_correct_plane(self):
+        covered = rtv._covered_z_planes([self._slice_at_z(7.0)], **self._grid())
+        assert covered == [7]
+
+    def test_multiple_slices_all_present(self):
+        slices = [self._slice_at_z(z) for z in (0.0, 5.0, 10.0)]
+        covered = rtv._covered_z_planes(slices, **self._grid())
+        assert covered == [0, 5, 10]
+
+    def test_out_of_bounds_slice_excluded(self):
+        covered = rtv._covered_z_planes([self._slice_at_z(100.0)], **self._grid())
+        assert covered == []
+
+    def test_result_is_sorted(self):
+        slices = [self._slice_at_z(z) for z in (10.0, 0.0, 5.0)]
+        covered = rtv._covered_z_planes(slices, **self._grid())
+        assert covered == sorted(covered)
+
+    def test_non_unit_z_spacing(self):
+        covered = rtv._covered_z_planes(
+            [self._slice_at_z(5.0)], **self._grid(sz=2.5)
+        )
+        assert covered == [2]   # 5.0 / 2.5 = 2
+
+
+# ---------------------------------------------------------------------------
+# fill_slice_gaps
+# ---------------------------------------------------------------------------
+
+class TestFillSliceGaps:
+    def _vol(self, nz=5, ny=4, nx=4):
+        img = sitk.Image(nx, ny, nz, sitk.sitkFloat32)
+        img.SetSpacing((1.0, 1.0, 1.0))
+        return img
+
+    def _set_plane(self, img, k, value):
+        arr = sitk.GetArrayFromImage(img).astype(np.float32)
+        arr[k] = value
+        result = sitk.GetImageFromArray(arr)
+        result.CopyInformation(img)
+        return result
+
+    def test_empty_covered_returns_volume_unchanged(self):
+        vol = self._set_plane(self._vol(), 2, 5.0)
+        result = rtv.fill_slice_gaps(vol, [], 0.0)
+        arr = sitk.GetArrayFromImage(result)
+        assert arr[2, 0, 0] == pytest.approx(5.0)
+
+    def test_all_planes_covered_values_unchanged(self):
+        vol = self._vol(nz=3)
+        for k, v in enumerate((1.0, 2.0, 3.0)):
+            vol = self._set_plane(vol, k, v)
+        result = rtv.fill_slice_gaps(vol, [0, 1, 2], 0.0)
+        arr = sitk.GetArrayFromImage(result)
+        assert arr[0, 0, 0] == pytest.approx(1.0)
+        assert arr[1, 0, 0] == pytest.approx(2.0)
+        assert arr[2, 0, 0] == pytest.approx(3.0)
+
+    def test_midpoint_interpolation(self):
+        """Plane 1 gaps between val=0 at k=0 and val=2 at k=2 → expects 1."""
+        vol = self._vol(nz=3)
+        vol = self._set_plane(vol, 0, 0.0)
+        vol = self._set_plane(vol, 2, 2.0)
+        result = rtv.fill_slice_gaps(vol, [0, 2], 0.0)
+        arr = sitk.GetArrayFromImage(result)
+        assert arr[1, 0, 0] == pytest.approx(1.0)
+
+    def test_weighted_interpolation_across_four_gaps(self):
+        """Planes 1-3 between k=0 (val=0) and k=4 (val=4) must be 1, 2, 3."""
+        vol = self._vol(nz=5)
+        vol = self._set_plane(vol, 0, 0.0)
+        vol = self._set_plane(vol, 4, 4.0)
+        result = rtv.fill_slice_gaps(vol, [0, 4], 0.0)
+        arr = sitk.GetArrayFromImage(result)
+        assert arr[1, 0, 0] == pytest.approx(1.0)
+        assert arr[2, 0, 0] == pytest.approx(2.0)
+        assert arr[3, 0, 0] == pytest.approx(3.0)
+
+    def test_extrapolation_below_copies_nearest(self):
+        """Planes before the first covered plane duplicate it (no extrapolation)."""
+        vol = self._vol(nz=5)
+        vol = self._set_plane(vol, 3, 7.0)
+        vol = self._set_plane(vol, 4, 9.0)
+        result = rtv.fill_slice_gaps(vol, [3, 4], 0.0)
+        arr = sitk.GetArrayFromImage(result)
+        for k in (0, 1, 2):
+            assert arr[k, 0, 0] == pytest.approx(7.0)
+
+    def test_extrapolation_above_copies_nearest(self):
+        """Planes after the last covered plane duplicate it."""
+        vol = self._vol(nz=5)
+        vol = self._set_plane(vol, 0, 3.0)
+        vol = self._set_plane(vol, 1, 5.0)
+        result = rtv.fill_slice_gaps(vol, [0, 1], 0.0)
+        arr = sitk.GetArrayFromImage(result)
+        for k in (2, 3, 4):
+            assert arr[k, 0, 0] == pytest.approx(5.0)
+
+    def test_covered_planes_not_modified(self):
+        vol = self._vol(nz=5)
+        vol = self._set_plane(vol, 0, 10.0)
+        vol = self._set_plane(vol, 4, 20.0)
+        result = rtv.fill_slice_gaps(vol, [0, 4], 0.0)
+        arr = sitk.GetArrayFromImage(result)
+        assert arr[0, 0, 0] == pytest.approx(10.0)
+        assert arr[4, 0, 0] == pytest.approx(20.0)
+
+    def test_metadata_preserved(self):
+        vol = self._vol()
+        vol.SetSpacing((2.0, 2.0, 3.0))
+        vol.SetOrigin((1.0, 2.0, 3.0))
+        result = rtv.fill_slice_gaps(vol, [0, 4], 0.0)
+        assert result.GetSpacing() == pytest.approx((2.0, 2.0, 3.0))
+        assert result.GetOrigin() == pytest.approx((1.0, 2.0, 3.0))
+
+
+# ---------------------------------------------------------------------------
+# Helpers for DICOM tests
+# ---------------------------------------------------------------------------
+
+@pytest.fixture
+def dicom_series_dir(tmp_path):
+    """Write a 3-slice DICOM series at z = 0, 5, 10 mm.
+
+    Uses KeepOriginalImageUIDOn so all three files keep the same Series
+    Instance UID and are recognised as one series by GetGDCMSeriesIDs.
+    """
+    series_uid = "1.2.826.0.1.3680043.2.1125.1"
+    study_uid  = "1.2.826.0.1.3680043.2.1125.0"
+
+    try:
+        for i, z in enumerate([0.0, 5.0, 10.0]):
+            img = sitk.Image(8, 8, sitk.sitkUInt16)
+            img = img + (i * 50)   # distinct fill per slice
+            img.SetMetaData("0008|0016", "1.2.840.10008.5.1.4.1.1.2")
+            img.SetMetaData("0008|0018", f"{series_uid}.{i+1:04d}")
+            img.SetMetaData("0008|0060", "CT")
+            img.SetMetaData("0020|000d", study_uid)
+            img.SetMetaData("0020|000e", series_uid)
+            img.SetMetaData("0020|0013", str(i + 1))
+            img.SetMetaData("0020|0032", f"0.0\\0.0\\{z:.1f}")
+            img.SetMetaData("0020|0037", "1.0\\0.0\\0.0\\0.0\\1.0\\0.0")
+            img.SetMetaData("0018|0050", "2.0")
+            w = sitk.ImageFileWriter()
+            w.KeepOriginalImageUIDOn()
+            w.SetFileName(str(tmp_path / f"slice{i:04d}.dcm"))
+            w.Execute(img)
+    except Exception as exc:
+        pytest.skip(f"DICOM write unavailable: {exc}")
+
+    return str(tmp_path)
+
+
+# ---------------------------------------------------------------------------
+# load_dicom_slices
+# ---------------------------------------------------------------------------
+
+class TestLoadDicomSlices:
+    def test_returns_correct_slice_count(self, dicom_series_dir):
+        slices = rtv.load_dicom_slices(dicom_series_dir)
+        assert len(slices) == 3
+
+    def test_slices_are_single_slice_3d(self, dicom_series_dir):
+        for s in rtv.load_dicom_slices(dicom_series_dir):
+            assert s.GetDimension() == 3
+            assert s.GetSize()[2] == 1
+
+    def test_origins_match_ipp_tags(self, dicom_series_dir):
+        slices = rtv.load_dicom_slices(dicom_series_dir)
+        z_origins = sorted(s.GetOrigin()[2] for s in slices)
+        assert z_origins == pytest.approx([0.0, 5.0, 10.0], abs=0.01)
+
+    def test_thickness_from_dicom_tag(self, dicom_series_dir):
+        for s in rtv.load_dicom_slices(dicom_series_dir):
+            assert s.GetSpacing()[2] == pytest.approx(2.0)
+
+    def test_thickness_override(self, dicom_series_dir):
+        for s in rtv.load_dicom_slices(dicom_series_dir, thickness=4.0):
+            assert s.GetSpacing()[2] == pytest.approx(4.0)
+
+    def test_raises_for_directory_with_no_dicom(self, tmp_path):
+        with pytest.raises(ValueError, match="No DICOM series found"):
+            rtv.load_dicom_slices(str(tmp_path))
+
+
+# ---------------------------------------------------------------------------
+# main – DICOM path
+# ---------------------------------------------------------------------------
+
+class TestMainDicom:
+    def test_dicom_dir_produces_3d_output(self, dicom_series_dir, tmp_path):
+        out = str(tmp_path / "out.nrrd")
+        rc = rtv.main(["-D", dicom_series_dir, "-s", "1.0", out])
+        assert rc == 0
+        result = sitk.ReadImage(out)
+        assert result.GetDimension() == 3
+
+    def test_gap_is_filled_by_interpolation(self, dicom_series_dir, tmp_path):
+        """Slices at z=0 (fill=0) and z=10 (fill=100); z=5 plane must be ~50."""
+        out = str(tmp_path / "out.nrrd")
+        rtv.main(["-D", dicom_series_dir, "-s", "1.0", out])
+        arr = sitk.GetArrayFromImage(sitk.ReadImage(out))
+        nz = arr.shape[0]
+        mid = nz // 2
+        # Middle Z plane should be interpolated, not zero.
+        assert arr[mid, 0, 0] > 0.0
+
+    def test_dicom_only_needs_output_positional_arg(self, dicom_series_dir, tmp_path):
+        """When -D is given, a single positional arg (output) is enough."""
+        out = str(tmp_path / "out.nrrd")
+        rc = rtv.main(["-D", dicom_series_dir, out])
+        assert rc == 0
+
