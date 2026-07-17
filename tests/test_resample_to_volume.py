@@ -598,13 +598,16 @@ class TestMainDicom:  # pylint: disable=redefined-outer-name
 
     def test_gap_is_filled_by_interpolation(self, dicom_series_dir, tmp_path):
         """Slices at z=0 (fill=0) and z=10 (fill=100); z=5 plane must be ~50."""
+        from pathlib import Path
+
+        # Remove the middle slice (z=5) to create an actual gap.
+        (Path(dicom_series_dir) / "slice0001.dcm").unlink()
+
         out = str(tmp_path / "out.nrrd")
         rtv.main(["-D", dicom_series_dir, "-s", "1.0", out])
         arr = sitk.GetArrayFromImage(sitk.ReadImage(out))
-        nz = arr.shape[0]
-        mid = nz // 2
-        # Middle Z plane should be interpolated, not zero.
-        assert arr[mid, 0, 0] > 0.0
+        mid = arr.shape[0] // 2
+        assert arr[mid, 0, 0] == pytest.approx(50.0, abs=1.0)
 
     def test_dicom_only_needs_output_positional_arg(self, dicom_series_dir, tmp_path):
         """When -D is given, a single positional arg (output) is enough."""
