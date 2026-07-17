@@ -13,5 +13,29 @@ vtk = ["vtk"]
 dev = ["pytest"]
 
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+py-modules = [
+    "bound_obj",
+    "compareimages",
+    "dicomseries",
+    "dictdump",
+    "extract_objects",
+    "extract_subimages",
+    "hdr2mhd",
+    "histo",
+    "lmreg",
+    "merge_slices",
+    "nifti2vti",
+    "paint_points",
+    "query_vol",
+    "radial_slices",
+    "removemetadata",
+    "resample_to_volume",
+    "resizeVol",
+    "show",
+    "sitk_test",
+    "vector",
+]
