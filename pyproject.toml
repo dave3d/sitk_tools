@@ -1,0 +1,21 @@
+[project]
+name = "sitk-tools"
+version = "0.1.0"
+description = "Utility scripts for medical image processing built on SimpleITK"
+requires-python = ">=3.10"
+dependencies = [
+    "simpleitk",
+    "numpy",
+]
+
+[project.optional-dependencies]
+vtk = ["vtk"]
+
+[dependency-groups]
+dev = [
+    "pytest",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
