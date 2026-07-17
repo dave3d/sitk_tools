@@ -112,14 +112,21 @@ def _dicom_3d_geometry(
 
     try:
         iop = [float(v) for v in img2d.GetMetaData("0020|0037").split("\\")]
-        row_cos = np.array(iop[:3])
-        col_cos = np.array(iop[3:])
-        normal  = np.cross(row_cos, col_cos)
+        if len(iop) != 6:
+            raise ValueError(f"IOP has {len(iop)} value(s)")
+        row_cos = np.array(iop[:3], dtype=float)
+        col_cos = np.array(iop[3:], dtype=float)
+
+        row_cos /= np.linalg.norm(row_cos) or 1.0
+        col_cos /= np.linalg.norm(col_cos) or 1.0
+        normal = np.cross(row_cos, col_cos)
+        normal /= np.linalg.norm(normal) or 1.0
+
         # SimpleITK direction matrices are stored row-major with *columns*
         # equal to the physical directions of each index axis.
         d_mat = np.column_stack([row_cos, col_cos, normal])
         direction3d: tuple[float, ...] = tuple(float(v) for v in d_mat.flatten())
-    except RuntimeError:
+    except (RuntimeError, ValueError, IndexError):
         direction3d = (1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0)
 
     return origin3d, direction3d
