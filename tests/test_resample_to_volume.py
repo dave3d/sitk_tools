@@ -326,7 +326,7 @@ class TestLoadImageThickness:
 # _dicom_3d_geometry
 # ---------------------------------------------------------------------------
 
-class TestDicom3dGeometry:
+class TestDicom3dGeometry:  # pylint: disable=protected-access
     def _img_with_tags(self, ipp=None, iop=None):
         img = sitk.Image(8, 8, sitk.sitkFloat32)
         if ipp is not None:
@@ -382,7 +382,7 @@ class TestDicom3dGeometry:
 # _covered_z_planes
 # ---------------------------------------------------------------------------
 
-class TestCoveredZPlanes:
+class TestCoveredZPlanes:  # pylint: disable=protected-access
     def _grid(self, nz=20, sz=1.0):
         return {
             "size": (8, 8, nz),
@@ -546,7 +546,7 @@ def dicom_series_dir(tmp_path):
             w.KeepOriginalImageUIDOn()
             w.SetFileName(str(tmp_path / f"slice{i:04d}.dcm"))
             w.Execute(img)
-    except Exception as exc:
+    except (RuntimeError, OSError) as exc:
         pytest.skip(f"DICOM write unavailable: {exc}")
 
     return str(tmp_path)
@@ -556,7 +556,7 @@ def dicom_series_dir(tmp_path):
 # load_dicom_slices
 # ---------------------------------------------------------------------------
 
-class TestLoadDicomSlices:
+class TestLoadDicomSlices:  # pylint: disable=redefined-outer-name
     def test_returns_correct_slice_count(self, dicom_series_dir):
         slices = rtv.load_dicom_slices(dicom_series_dir)
         assert len(slices) == 3
@@ -588,7 +588,7 @@ class TestLoadDicomSlices:
 # main – DICOM path
 # ---------------------------------------------------------------------------
 
-class TestMainDicom:
+class TestMainDicom:  # pylint: disable=redefined-outer-name
     def test_dicom_dir_produces_3d_output(self, dicom_series_dir, tmp_path):
         out = str(tmp_path / "out.nrrd")
         rc = rtv.main(["-D", dicom_series_dir, "-s", "1.0", out])
@@ -611,4 +611,3 @@ class TestMainDicom:
         out = str(tmp_path / "out.nrrd")
         rc = rtv.main(["-D", dicom_series_dir, out])
         assert rc == 0
-

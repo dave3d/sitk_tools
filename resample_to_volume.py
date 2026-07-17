@@ -223,7 +223,7 @@ def _covered_z_planes(
 def fill_slice_gaps(
     volume: sitk.Image,
     covered: list[int],
-    default_value: float,
+    _default_value: float,
 ) -> sitk.Image:
     """Fill uncovered Z planes in *volume* by linear interpolation.
 
@@ -239,7 +239,7 @@ def fill_slice_gaps(
     covered:
         Sorted list of Z-plane indices that have real data from input slices.
         Obtain this from :func:`_covered_z_planes`.
-    default_value:
+    _default_value:
         Unused; kept for API symmetry.
     """
     if not covered:
@@ -427,7 +427,7 @@ def build_spacing(args: argparse.Namespace) -> list[float] | None:
     return None
 
 
-def main(argv: list[str] | None = None) -> int:
+def main(argv: list[str] | None = None) -> int:  # pylint: disable=too-many-locals
     """Entry point: parse arguments, resample inputs, write output."""
     args = parse_args(sys.argv[1:] if argv is None else argv)
 
