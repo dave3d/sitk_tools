@@ -36,7 +36,7 @@ Options
     -x FLOAT              Output spacing along X axis
     -y FLOAT              Output spacing along Y axis
     -z FLOAT              Output spacing along Z axis
-    -t, --thickness FLOAT Slice thickness in mm applied to 2-D inputs (default: 1.0)
+    -t, --thickness FLOAT Slice thickness in mm for promoted 2-D slices; if omitted, uses DICOM SliceThickness (0018|0050) for -D and otherwise keeps SimpleITK defaults.
     -D, --dicom-dir DIR   Directory of DICOM slices to load individually (repeatable)
     -i, --interp STR      Interpolator: linear (default), nearest, bspline, gaussian
     -p, --pad FLOAT       Padding value for voxels outside every input image (default: 0)
