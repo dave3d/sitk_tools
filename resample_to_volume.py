@@ -187,6 +187,9 @@ def load_dicom_slices(
             except RuntimeError:
                 z_sp = 1.0
 
+        if z_sp <= 0:
+            raise ValueError(f"{path}: invalid slice thickness {z_sp}; must be > 0.")
+
         sp = list(img3d.GetSpacing())
         sp[2] = z_sp
         img3d.SetSpacing(tuple(sp))
