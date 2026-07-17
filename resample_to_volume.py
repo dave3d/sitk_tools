@@ -405,7 +405,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
                         choices=list(INTERPOLATORS),
                         help="Interpolation method (default: linear).")
     parser.add_argument("-t", "--thickness", type=float, default=None, metavar="MM",
-                        help="Slice thickness in mm for 2-D input images (default: 1.0).")
+                        help="Slice thickness in mm for promoted 2-D slices. If omitted, uses DICOM SliceThickness (0018|0050) for -D and otherwise keeps SimpleITK defaults.")
     parser.add_argument("-D", "--dicom-dir", action="append", default=None,
                         metavar="DIR", dest="dicom_dirs",
                         help="Directory of DICOM slices to load individually "
