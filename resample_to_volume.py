@@ -504,14 +504,19 @@ def main(argv: list[str] | None = None) -> int:  # pylint: disable=too-many-loca
     )
 
     # Fill gaps between irregularly-spaced DICOM slices by linear interpolation.
-    if dicom_slices:
+    # Only do this in DICOM-only mode; otherwise it can overwrite data coming
+    # from non-DICOM inputs that happen to lie on uncovered Z planes.
+    if dicom_slices and not input_paths:
         logging.info("Filling gaps between DICOM slices …")
         covered = _covered_z_planes(dicom_slices, size, spacing, origin, direction)
         logging.info(
             "  %d / %d Z planes covered by input slices", len(covered), size[2]
         )
         volume = fill_slice_gaps(volume, covered, args.pad)
-
+    elif dicom_slices:
+        logging.warning(
+            "Skipping DICOM gap filling because non-DICOM inputs are also provided."
+        )
     # Write output.
     logging.info("Writing %s", output_path)
     sitk.WriteImage(volume, output_path)
