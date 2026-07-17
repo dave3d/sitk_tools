@@ -103,8 +103,10 @@ def _dicom_3d_geometry(
     """
     try:
         ipp = [float(v) for v in img2d.GetMetaData("0020|0032").split("\\")]
+        if len(ipp) != 3:
+            raise ValueError(f"IPP has {len(ipp)} value(s)")
         origin3d: tuple[float, ...] = (ipp[0], ipp[1], ipp[2])
-    except RuntimeError:
+    except (RuntimeError, ValueError, IndexError):
         o = img2d.GetOrigin()
         origin3d = (float(o[0]), float(o[1]), float(o[2]) if len(o) > 2 else 0.0)
 
