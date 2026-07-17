@@ -36,7 +36,9 @@ Options
     -x FLOAT              Output spacing along X axis
     -y FLOAT              Output spacing along Y axis
     -z FLOAT              Output spacing along Z axis
-    -t, --thickness FLOAT Slice thickness in mm for promoted 2-D slices; if omitted, uses DICOM SliceThickness (0018|0050) for -D and otherwise keeps SimpleITK defaults.
+    -t, --thickness FLOAT Slice thickness in mm for promoted 2-D slices; if omitted,
+                          uses DICOM SliceThickness (0018|0050) for -D and otherwise
+                          keeps SimpleITK defaults.
     -D, --dicom-dir DIR   Directory of DICOM slices to load individually (repeatable)
     -i, --interp STR      Interpolator: linear (default), nearest, bspline, gaussian
     -p, --pad FLOAT       Padding value for voxels outside every input image (default: 0)
@@ -420,7 +422,9 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
                         choices=list(INTERPOLATORS),
                         help="Interpolation method (default: linear).")
     parser.add_argument("-t", "--thickness", type=float, default=None, metavar="MM",
-                        help="Slice thickness in mm for promoted 2-D slices. If omitted, uses DICOM SliceThickness (0018|0050) for -D and otherwise keeps SimpleITK defaults.")
+                        help=("Slice thickness in mm for promoted 2-D slices. "
+                              "If omitted, uses DICOM SliceThickness (0018|0050) "
+                              "for -D and otherwise keeps SimpleITK defaults."))
     parser.add_argument("-D", "--dicom-dir", action="append", default=None,
                         metavar="DIR", dest="dicom_dirs",
                         help="Directory of DICOM slices to load individually "

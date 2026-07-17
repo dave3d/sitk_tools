@@ -4,6 +4,7 @@ Tests for resample_to_volume.py
 # pylint: disable=missing-function-docstring,missing-class-docstring
 
 import argparse
+from pathlib import Path
 
 import pytest
 import numpy as np
@@ -598,8 +599,6 @@ class TestMainDicom:  # pylint: disable=redefined-outer-name
 
     def test_gap_is_filled_by_interpolation(self, dicom_series_dir, tmp_path):
         """Slices at z=0 (fill=0) and z=10 (fill=100); z=5 plane must be ~50."""
-        from pathlib import Path
-
         # Remove the middle slice (z=5) to create an actual gap.
         (Path(dicom_series_dir) / "slice0001.dcm").unlink()
 
