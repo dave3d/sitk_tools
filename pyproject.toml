@@ -10,11 +10,7 @@ dependencies = [
 
 [project.optional-dependencies]
 vtk = ["vtk"]
-
-[dependency-groups]
-dev = [
-    "pytest",
-]
+dev = ["pytest"]
 
 [build-system]
 requires = ["hatchling"]
