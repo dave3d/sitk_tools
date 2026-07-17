@@ -78,8 +78,11 @@ def load_image(path: str, thickness: float | None = None) -> sitk.Image:
     if img.GetDimension() == 2:
         img = sitk.JoinSeries(img)
         if thickness is not None:
+            thickness = float(thickness)
+            if thickness <= 0:
+                raise ValueError(f"{path}: thickness must be > 0 (got {thickness}).")
             sp = list(img.GetSpacing())
-            sp[2] = float(thickness)
+            sp[2] = thickness
             img.SetSpacing(sp)
     if img.GetDimension() != 3:
         raise ValueError(f"{path}: only 2-D and 3-D images are supported.")
