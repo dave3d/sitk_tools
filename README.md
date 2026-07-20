@@ -88,6 +88,30 @@ Strip all metadata from an image and write the clean result to a new file.
 python removemetadata.py [--verbose] <input_file> <output_file>
 ```
 
+### `resample_to_volume.py`
+Resample an arbitrary set of images into a single uniform 3D volume.  Each input is resampled
+into a common reference grid defined by the bounding box of all inputs, so images with
+different sizes, spacings, origins, and orientations are handled correctly.
+
+For DICOM series with irregular slice spacing or gaps, use `-D` instead of passing files
+directly — it reads every `.dcm` file individually and places each slice at its true
+Image Position Patient coordinate, filling gaps by linear interpolation.
+
+```
+python resample_to_volume.py [options] image1 image2 ... output_volume
+python resample_to_volume.py [options] -D dicom_dir output_volume
+```
+
+| Option | Description |
+|--------|-------------|
+| `-s`, `--spacing MM` | Isotropic output voxel spacing in mm (default: finest input spacing) |
+| `-x`/`-y`/`-z MM` | Per-axis output spacing |
+| `-t`, `--thickness MM` | Slice thickness for promoted 2-D inputs; defaults to the DICOM `SliceThickness` tag when using `-D` |
+| `-D`, `--dicom-dir DIR` | Directory of DICOM slices to load individually (repeatable) |
+| `-i`, `--interp STR` | Interpolator: `linear` (default), `nearest`, `bspline`, `gaussian` |
+| `-p`, `--pad VALUE` | Fill value for voxels outside every input image (default: `0`) |
+| `-v`, `--verbose` | Print progress information |
+
 ### `resizeVol.py`
 Linearly resample a volume to a new voxel size. Unspecified dimensions are left unchanged.
 ```
