@@ -7,7 +7,7 @@ A collection of Python utility scripts for medical image processing built on [Si
 - Python 3.10+
 - [SimpleITK](https://simpleitk.readthedocs.io/en/master/gettingStarted.html) (`pip install SimpleITK`)
 - NumPy (`pip install numpy`) — required by `histo.py` and `resample_to_volume.py`
-- VTK (`pip install vtk`) — required by `nifti2vti.py` only
+- VTK (`pip install vtk`) — optional extra (install via `pip install ".[vtk]"`)
 
 ## Installation
 
