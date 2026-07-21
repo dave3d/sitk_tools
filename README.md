@@ -4,9 +4,36 @@ A collection of Python utility scripts for medical image processing built on [Si
 
 ## Requirements
 
-- Python 3.x
+- Python 3.10+
 - [SimpleITK](https://simpleitk.readthedocs.io/en/master/gettingStarted.html) (`pip install SimpleITK`)
-- NumPy (`pip install numpy`) — required by `histo.py`
+- NumPy (`pip install numpy`) — required by `histo.py` and `resample_to_volume.py`
+- VTK (`pip install vtk`) — required by `nifti2vti.py` only
+
+## Installation
+
+A `pyproject.toml` is provided. Install all core dependencies with:
+
+```bash
+pip install .
+```
+
+Or using [uv](https://docs.astral.sh/uv/):
+
+```bash
+uv sync
+```
+
+To include the optional VTK dependency:
+
+```bash
+pip install ".[vtk]"
+```
+
+To include development tools (pytest):
+
+```bash
+pip install ".[dev]"
+```
 
 ## Scripts
 
