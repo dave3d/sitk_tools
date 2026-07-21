@@ -14,6 +14,7 @@ import vtk
 
 
 def derive_output_path(input_path: str) -> str:
+    """Return the output .vti path derived from a NIfTI input path."""
     p = pathlib.Path(input_path)
     # Strip .nii or .nii.gz suffix
     if p.suffix == ".gz":
@@ -24,6 +25,7 @@ def derive_output_path(input_path: str) -> str:
 
 
 def nifti_to_vti(input_path: str, output_path: str) -> None:
+    """Read a NIfTI file and write it as a compressed VTK XML image (.vti)."""
     reader = vtk.vtkNIFTIImageReader()
     reader.SetFileName(input_path)
     reader.Update()
@@ -43,5 +45,5 @@ if __name__ == "__main__":
         print(f"Usage: {sys.argv[0]} <input.nii[.gz]> [input2.nii[.gz] ...]")
         sys.exit(1)
 
-    for input_path in sys.argv[1:]:
-        nifti_to_vti(input_path, derive_output_path(input_path))
+    for src in sys.argv[1:]:
+        nifti_to_vti(src, derive_output_path(src))
