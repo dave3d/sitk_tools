@@ -542,7 +542,8 @@ def main(argv: list[str] | None = None) -> int:  # pylint: disable=too-many-loca
         )
     # Cast to the requested output type, or fall back to the first input's type.
     out_pixel_type = PIXEL_TYPES[args.pixel_type] if args.pixel_type else input_pixel_type
-    volume = sitk.Cast(volume, out_pixel_type)
+    if volume.GetPixelID() != out_pixel_type:
+        volume = sitk.Cast(volume, out_pixel_type)
 
     # Write output.
     logging.info("Writing %s", output_path)
