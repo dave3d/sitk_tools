@@ -94,6 +94,13 @@ python lmreg.py --fixed <fixed_image> --moving <moving_image> \
 ```
 Point files should be in Elastix format (6-line files with 4 coordinate lines).
 
+### `mkdicom.py`
+Convert a 3D image to a DICOM slice series. Each Z slice is written as an individual `.dcm` file sharing a common Series Instance UID so viewers recognise them as one series. Sets standard DICOM tags including Image Position Patient, Image Orientation Patient, Slice Thickness, Window Center/Width, and Study/Series UIDs.
+```
+python mkdicom.py [input_image]
+```
+Defaults to `teapot.nrrd` when no argument is given. Accepts any format SimpleITK supports.
+
 ### `merge_slices.py`
 Merge a directory of 2D slice images (e.g., nnUNet output) into a single 3D volume. Supports an optional pickle metadata file to restore original volume geometry.
 ```
