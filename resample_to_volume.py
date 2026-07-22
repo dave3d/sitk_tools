@@ -62,6 +62,17 @@ INTERPOLATORS = {
     "gaussian": sitk.sitkGaussian,
 }
 
+PIXEL_TYPES = {
+    "uint8":   sitk.sitkUInt8,
+    "int8":    sitk.sitkInt8,
+    "uint16":  sitk.sitkUInt16,
+    "int16":   sitk.sitkInt16,
+    "uint32":  sitk.sitkUInt32,
+    "int32":   sitk.sitkInt32,
+    "float32": sitk.sitkFloat32,
+    "float64": sitk.sitkFloat64,
+}
+
 
 def load_image(path: str, thickness: float | None = None) -> sitk.Image:
     """Load an image file; promote 2-D images to 3-D single-slice volumes.
@@ -431,6 +442,9 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
                              "(may be repeated for multiple series).")
     parser.add_argument("-p", "--pad", type=float, default=0.0, metavar="VALUE",
                         help="Fill value for voxels outside all inputs (default: 0).")
+    parser.add_argument("-T", "--type", default=None, dest="pixel_type",
+                        choices=list(PIXEL_TYPES),
+                        help="Output pixel type (default: same as first input).")
     parser.add_argument("-v", "--verbose", action="store_true")
     return parser.parse_args(argv)
 
@@ -492,6 +506,9 @@ def main(argv: list[str] | None = None) -> int:  # pylint: disable=too-many-loca
             for i in range(3)
         ]
 
+    # Remember the pixel type of the first input for the final cast.
+    input_pixel_type = images[0].GetPixelID()
+
     # Compute the reference grid.
     logging.info("Computing reference grid …")
     size, spacing, origin, direction = compute_reference_grid(images, requested_spacing)
@@ -521,6 +538,10 @@ def main(argv: list[str] | None = None) -> int:  # pylint: disable=too-many-loca
         logging.warning(
             "Skipping DICOM gap filling because non-DICOM inputs are also provided."
         )
+    # Cast to the requested output type, or fall back to the first input's type.
+    out_pixel_type = PIXEL_TYPES[args.pixel_type] if args.pixel_type else input_pixel_type
+    volume = sitk.Cast(volume, out_pixel_type)
+
     # Write output.
     logging.info("Writing %s", output_path)
     sitk.WriteImage(volume, output_path)
