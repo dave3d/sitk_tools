@@ -66,6 +66,8 @@ def main():  # pylint: disable=too-many-locals
 
         # SOP Class UID — CT Image Storage.
         slc.SetMetaData("0008|0016", "1.2.840.10008.5.1.4.1.1.2")
+        # SOP Instance UID — must be unique per slice.
+        slc.SetMetaData("0008|0018", f"{series_instance_uid}.{z + 1:04d}")
         # Image Type — mark as derived/secondary (not original acquisition data).
         slc.SetMetaData("0008|0008", "DERIVED\\SECONDARY")
 
