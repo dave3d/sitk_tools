@@ -506,8 +506,10 @@ def main(argv: list[str] | None = None) -> int:  # pylint: disable=too-many-loca
             for i in range(3)
         ]
 
-    # Remember the pixel type of the first input for the final cast.
-    input_pixel_type = images[0].GetPixelID()
+    # Remember the pixel type of the first *positional* input if provided; otherwise
+    # fall back to the first DICOM slice.
+    first_input_img = images[len(dicom_slices)] if input_paths else images[0]
+    input_pixel_type = first_input_img.GetPixelID()
 
     # Compute the reference grid.
     logging.info("Computing reference grid …")
