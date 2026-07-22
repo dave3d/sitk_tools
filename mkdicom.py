@@ -89,8 +89,8 @@ def main():  # pylint: disable=too-many-locals
         slc.SetMetaData("0020|000e", series_instance_uid)
         # Series Number
         slc.SetMetaData("0020|0011", "1")
-        # Instance Number — 0-based slice index within the series.
-        slc.SetMetaData("0020|0013", str(z))
+        # Instance Number — 1-based slice index within the series.
+        slc.SetMetaData("0020|0013", str(z + 1))
 
         # Image Position Patient — physical coordinates of the top-left voxel,
         # computed from the volume's origin, spacing, and direction cosines.
