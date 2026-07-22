@@ -81,7 +81,7 @@ def main():  # pylint: disable=too-many-locals
         # Modality — CT preserves slice location and thickness in most viewers.
         slc.SetMetaData("0008|0060", "CT")
         # Series Description — human-readable label shown in viewers.
-        slc.SetMetaData("0008|103e", args.input)
+        slc.SetMetaData("0008|103e", args.input.rsplit("/", 1)[-1].rsplit("\\", 1)[-1])
 
         # Study Instance UID — groups all series for one patient/session.
         slc.SetMetaData("0020|000d", study_instance_uid)
