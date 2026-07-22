@@ -1,4 +1,11 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.10"
+# dependencies = [
+#   "SimpleITK",
+# ]
+# ///
+
 """
 mkdicom.py — Convert a 3D image to a DICOM slice series.
 
