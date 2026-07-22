@@ -38,6 +38,8 @@ def main():  # pylint: disable=too-many-locals
     args = parser.parse_args()
 
     volume = sitk.ReadImage(args.input)
+    if volume.GetDimension() != 3:
+        raise ValueError(f"Expected a 3D image, got {volume.GetDimension()}D: {args.input}")
 
     # Compute window center/width from the volume's intensity range.
     stats = sitk.StatisticsImageFilter()
