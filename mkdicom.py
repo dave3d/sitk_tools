@@ -42,7 +42,7 @@ def main():  # pylint: disable=too-many-locals
     # Compute window center/width from the volume's intensity range.
     stats = sitk.StatisticsImageFilter()
     stats.Execute(volume)
-    window_width  = stats.GetMaximum() - stats.GetMinimum()
+    window_width = max(1.0, stats.GetMaximum() - stats.GetMinimum())
     window_center = stats.GetMinimum() + window_width / 2.0
 
     # Slice thickness from the volume's Z spacing.
