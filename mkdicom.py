@@ -21,7 +21,8 @@ import uuid
 import SimpleITK as sitk
 
 
-def main():
+def main():  # pylint: disable=too-many-locals
+    """Parse arguments and convert the input volume to a DICOM slice series."""
     parser = argparse.ArgumentParser(
         description="Convert a 3D image to a DICOM slice series."
     )
