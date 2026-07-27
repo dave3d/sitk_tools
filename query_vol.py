@@ -10,6 +10,7 @@
 """ query_vol.py: Query volume information """
 
 import sys
+import argparse
 import SimpleITK as sitk
 import histo
 
@@ -47,7 +48,7 @@ def compute_bounds(img):
     print("Bounds:", mins, maxs)
 
 
-def query_vol(img, histoFlag=False):
+def query_vol(img, histoFlag=False, nbins=50, img_range=None, chart_width=60):
     """Query volume information"""
     print()
     print("Pixel type:", img.GetPixelIDTypeAsString())
@@ -65,14 +66,45 @@ def query_vol(img, histoFlag=False):
     compute_bounds(img)
 
     if histoFlag:
-        histo.histo(img)
+        histo.histo(img, nbins=nbins, img_range=img_range, chart_width=chart_width)
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("Usage: ", sys.argv[0], " <input>")
-    in_img = sitk.ReadImage(sys.argv[1])
+    parser = argparse.ArgumentParser(
+        description="Query volume information and display histogram."
+    )
+    parser.add_argument(
+        "input",
+        help="Input image file"
+    )
+    parser.add_argument(
+        "-b", "--bins",
+        type=int,
+        default=25,
+        help="Number of bins in histogram (default: 25)"
+    )
+    parser.add_argument(
+        "--no-histogram",
+        action="store_true",
+        help="Skip histogram display"
+    )
+    parser.add_argument(
+        "-r", "--range",
+        type=float,
+        nargs=2,
+        metavar=("MIN", "MAX"),
+        help="Custom range for histogram (e.g., -1000 2000)"
+    )
+    parser.add_argument(
+        "-w", "--chart-width",
+        type=int,
+        default=60,
+        help="Width of histogram chart in characters (default: 60)"
+    )
+    args = parser.parse_args()
+
+    in_img = sitk.ReadImage(args.input)
 
     print()
-    print("File:      ", sys.argv[1])
-    query_vol(in_img, True)
+    print("File:      ", args.input)
+    query_vol(in_img, not args.no_histogram, nbins=args.bins, img_range=args.range, chart_width=args.chart_width)

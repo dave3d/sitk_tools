@@ -14,7 +14,7 @@ import SimpleITK as sitk
 import numpy as np
 
 
-def histo(img, nbins=50, img_range=None):
+def histo(img, nbins=50, img_range=None, chart_width=60):
     """Compute histogram of an image"""
 
     if img_range is None:
@@ -26,11 +26,28 @@ def histo(img, nbins=50, img_range=None):
     hist, bins = np.histogram(np_img, bins=nbins, range=img_range)
 
     print("\nHistogram")
-    print("   bin_start    bin_count")
-    for i in range(nbins):
-        # print("{}, {}".format(bin_starts[i], hist[i]))
-        print(f"{bins[i]:12.2f}\t{hist[i]}")
+    _draw_histogram(hist, bins, nbins, width=chart_width)
     return hist, bins
+
+
+def _draw_histogram(hist, bins, nbins, width=60):
+    """Draw a text-based histogram chart"""
+    if len(hist) == 0:
+        return
+    
+    max_count = max(hist)
+    if max_count == 0:
+        return
+    
+    print(f"{'Bin Start':>12} | Count        | Chart")
+    print("-" * (12 + 1 + 12 + 1 + width))
+    
+    for i in range(nbins):
+        bin_start = bins[i]
+        count = hist[i]
+        bar_width = int((count / max_count) * width) if max_count > 0 else 0
+        bar = "█" * bar_width
+        print(f"{bin_start:12.2f} | {count:11d} | {bar}")
 
 
 if __name__ == "__main__":
