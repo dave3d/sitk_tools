@@ -102,6 +102,13 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
+    if args.bins <= 0:
+        parser.error("--bins must be a positive integer")
+    if args.chart_width <= 0:
+        parser.error("--chart-width must be a positive integer")
+    if args.range is not None and args.range[0] >= args.range[1]:
+        parser.error("--range MIN must be less than MAX")
+
     in_img = sitk.ReadImage(args.input)
 
     print()
