@@ -547,7 +547,7 @@ def main(argv: list[str] | None = None) -> int:  # pylint: disable=too-many-loca
 
     # Write output.
     logging.info("Writing %s", output_path)
-    sitk.WriteImage(volume, output_path)
+    sitk.WriteImage(volume, output_path, useCompression=True)
 
     return 0
 
