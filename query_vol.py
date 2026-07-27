@@ -9,7 +9,6 @@
 
 """ query_vol.py: Query volume information """
 
-import sys
 import argparse
 import SimpleITK as sitk
 import histo
@@ -107,4 +106,10 @@ if __name__ == "__main__":
 
     print()
     print("File:      ", args.input)
-    query_vol(in_img, not args.no_histogram, nbins=args.bins, img_range=args.range, chart_width=args.chart_width)
+    query_vol(
+        in_img,
+        not args.no_histogram,
+        nbins=args.bins,
+        img_range=args.range,
+        chart_width=args.chart_width,
+    )

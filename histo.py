@@ -34,20 +34,20 @@ def _draw_histogram(hist, bins, nbins, width=60):
     """Draw a text-based histogram chart"""
     if len(hist) == 0:
         return
-    
+
     max_count = max(hist)
     if max_count == 0:
         return
-    
+
     print(f"{'Bin Start':>12} | Count        | Chart")
     print("-" * (12 + 1 + 12 + 1 + width))
-    
+
     for i in range(nbins):
         bin_start = bins[i]
         count = hist[i]
         bar_width = int((count / max_count) * width) if max_count > 0 else 0
-        bar = "█" * bar_width
-        print(f"{bin_start:12.2f} | {count:11d} | {bar}")
+        histogram_bar = "█" * bar_width
+        print(f"{bin_start:12.2f} | {count:11d} | {histogram_bar}")
 
 
 if __name__ == "__main__":
