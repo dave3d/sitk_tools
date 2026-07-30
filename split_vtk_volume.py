@@ -10,11 +10,23 @@
 from __future__ import annotations
 
 import argparse
+from dataclasses import dataclass
 import os
 from pathlib import Path
 import xml.etree.ElementTree as ET
 
 import vtk
+
+
+@dataclass(frozen=True)
+class ImageGeometry:
+    """Metadata needed to describe the source image in a PVTI header."""
+
+    global_extent: list[int]
+    origin: list[float]
+    spacing: list[float]
+    point_data: object
+    cell_data: object
 
 
 def calculate_splits(min_val: int, max_val: int, num_splits: int) -> list[tuple[int, int]]:
@@ -100,11 +112,7 @@ def _build_data_section(parent, data_obj, section_tag: str) -> None:
 
 def write_pvti_header(
     pvti_filename: str,
-    global_extent: list[int],
-    origin: list[float],
-    spacing: list[float],
-    point_data,
-    cell_data,
+    geometry: ImageGeometry,
     piece_extents: list[list[int]],
     base_name: str,
 ) -> None:
@@ -123,15 +131,15 @@ def write_pvti_header(
         root,
         "PImageData",
         {
-            "WholeExtent": " ".join(map(str, global_extent)),
-            "Origin": " ".join(map(str, origin)),
-            "Spacing": " ".join(map(str, spacing)),
+            "WholeExtent": " ".join(map(str, geometry.global_extent)),
+            "Origin": " ".join(map(str, geometry.origin)),
+            "Spacing": " ".join(map(str, geometry.spacing)),
             "GhostLevel": "0",
         },
     )
 
-    _build_data_section(p_image, point_data, "PPointData")
-    _build_data_section(p_image, cell_data, "PCellData")
+    _build_data_section(p_image, geometry.point_data, "PPointData")
+    _build_data_section(p_image, geometry.cell_data, "PCellData")
 
     for i, extent in enumerate(piece_extents):
         ET.SubElement(
@@ -232,6 +240,83 @@ def _build_image_reader(input_file: str):
     )
 
 
+def _extract_geometry(source_data) -> ImageGeometry:
+    """Collect source image geometry and data-array metadata handles."""
+    return ImageGeometry(
+        global_extent=list(source_data.GetExtent()),
+        origin=list(source_data.GetOrigin()),
+        spacing=list(source_data.GetSpacing()),
+        point_data=source_data.GetPointData(),
+        cell_data=source_data.GetCellData(),
+    )
+
+
+def _calculate_axis_intervals(
+    global_extent: list[int], nx: int, ny: int, nz: int
+) -> tuple[list[tuple[int, int]], list[tuple[int, int]], list[tuple[int, int]]]:
+    """Return split intervals for each image axis."""
+    min_x, max_x = global_extent[0], global_extent[1]
+    min_y, max_y = global_extent[2], global_extent[3]
+    min_z, max_z = global_extent[4], global_extent[5]
+    return (
+        calculate_splits(min_x, max_x, nx),
+        calculate_splits(min_y, max_y, ny),
+        calculate_splits(min_z, max_z, nz),
+    )
+
+
+def _piece_extent_grid(
+    x_intervals: list[tuple[int, int]],
+    y_intervals: list[tuple[int, int]],
+    z_intervals: list[tuple[int, int]],
+) -> list[list[int]]:
+    """Build the list of extents for each output piece."""
+    extents: list[list[int]] = []
+    for z_start, z_end in z_intervals:
+        for y_start, y_end in y_intervals:
+            for x_start, x_end in x_intervals:
+                extents.append([x_start, x_end, y_start, y_end, z_start, z_end])
+    return extents
+
+
+def _write_piece(source_data, extent: list[int], piece_filename: Path) -> None:
+    """Extract and write a single VTI sub-volume for the given extent."""
+    extract = vtk.vtkExtractVOI()
+    extract.SetInputData(source_data)
+    extract.SetVOI(extent)
+    extract.Update()
+
+    change_info = vtk.vtkImageChangeInformation()
+    change_info.SetInputConnection(extract.GetOutputPort())
+    change_info.SetOutputExtentStart(extent[0], extent[2], extent[4])
+    change_info.Update()
+
+    vti_writer = vtk.vtkXMLImageDataWriter()
+    vti_writer.SetFileName(str(piece_filename))
+    vti_writer.SetInputConnection(change_info.GetOutputPort())
+    if vti_writer.Write() != 1:
+        raise RuntimeError(f"Failed to write piece file: {piece_filename}")
+
+
+def _prepare_output(output_pvti: str) -> tuple[Path, str]:
+    """Resolve output path, ensure directory exists, and derive piece basename."""
+    output_path = Path(output_pvti).resolve()
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    return output_path, output_path.stem
+
+
+def _write_piece_grid(
+    source_data,
+    output_path: Path,
+    base_name: str,
+    piece_extents: list[list[int]],
+) -> None:
+    """Write all VTI piece files from precomputed extents."""
+    for piece_id, extent in enumerate(piece_extents):
+        piece_filename = output_path.with_name(f"{base_name}_{piece_id}.vti")
+        _write_piece(source_data, extent, piece_filename)
+
+
 def split_vti(input_file: str, output_pvti: str, nx: int, ny: int, nz: int) -> None:
     """Split a 3D image into a grid of sub-volumes and write a matching PVTI."""
     if nx <= 0 or ny <= 0 or nz <= 0:
@@ -243,61 +328,22 @@ def split_vti(input_file: str, output_pvti: str, nx: int, ny: int, nz: int) -> N
     source_data = reader.GetOutput()
     _validate_source_data(source_data, input_file)
 
-    global_extent = list(source_data.GetExtent())
-    origin = list(source_data.GetOrigin())
-    spacing = list(source_data.GetSpacing())
-
-    min_x, max_x = global_extent[0], global_extent[1]
-    min_y, max_y = global_extent[2], global_extent[3]
-    min_z, max_z = global_extent[4], global_extent[5]
-
-    x_intervals = calculate_splits(min_x, max_x, nx)
-    y_intervals = calculate_splits(min_y, max_y, ny)
-    z_intervals = calculate_splits(min_z, max_z, nz)
+    geometry = _extract_geometry(source_data)
+    x_intervals, y_intervals, z_intervals = _calculate_axis_intervals(
+        geometry.global_extent, nx, ny, nz
+    )
+    piece_extents = _piece_extent_grid(x_intervals, y_intervals, z_intervals)
 
     total_pieces = nx * ny * nz
     print(f"Splitting grid into {nx}x{ny}x{nz} ({total_pieces} total pieces)...")
-    print(f"Source global extent: {global_extent}")
+    print(f"Source global extent: {geometry.global_extent}")
 
-    output_path = Path(output_pvti).resolve()
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    base_name = output_path.stem
-
-    piece_extents: list[list[int]] = []
-    piece_id = 0
-
-    for z_start, z_end in z_intervals:
-        for y_start, y_end in y_intervals:
-            for x_start, x_end in x_intervals:
-                extent = [x_start, x_end, y_start, y_end, z_start, z_end]
-                piece_extents.append(extent)
-
-                extract = vtk.vtkExtractVOI()
-                extract.SetInputData(source_data)
-                extract.SetVOI(extent)
-                extract.Update()
-
-                change_info = vtk.vtkImageChangeInformation()
-                change_info.SetInputConnection(extract.GetOutputPort())
-                change_info.SetOutputExtentStart(x_start, y_start, z_start)
-                change_info.Update()
-
-                piece_filename = output_path.with_name(f"{base_name}_{piece_id}.vti")
-                vti_writer = vtk.vtkXMLImageDataWriter()
-                vti_writer.SetFileName(str(piece_filename))
-                vti_writer.SetInputConnection(change_info.GetOutputPort())
-                if vti_writer.Write() != 1:
-                    raise RuntimeError(f"Failed to write piece file: {piece_filename}")
-
-                piece_id += 1
+    output_path, base_name = _prepare_output(output_pvti)
+    _write_piece_grid(source_data, output_path, base_name, piece_extents)
 
     write_pvti_header(
         str(output_path),
-        global_extent,
-        origin,
-        spacing,
-        source_data.GetPointData(),
-        source_data.GetCellData(),
+        geometry,
         piece_extents,
         base_name,
     )
@@ -327,6 +373,7 @@ def create_dummy_vti(filename: str) -> None:
 
 
 def main() -> None:
+    """Parse CLI arguments and split the requested 3D volume."""
     parser = argparse.ArgumentParser(
         description="Subdivide a 3D VTK-readable image into an arbitrary parallel block grid."
     )
