@@ -158,6 +158,13 @@ Display one or more images in Fiji/ImageJ via SimpleITK's `Show` function. Suppo
 python show.py [--scale <factor>] <image> [image2 ...]
 ```
 
+### `split_vtk_volume.py`
+Split a 3D VTK image volume into an `nx x ny x nz` grid of `.vti` pieces and write a matching `.pvti` master file.
+Input can be either a single 3D image file (for example: `.vti`, `.mhd/.mha`, `.nii/.nii.gz`, `.nrrd`, `.vtk`) or a directory containing a DICOM series.
+```
+python split_vtk_volume.py -i <input_image_or_dicom_dir> -o <output.pvti> -nx 2 -ny 2 -nz 2
+```
+
 ### `sitk_test.py`
 A smoke-test script that prints Python and SimpleITK version information and exercises a few basic filters (Gaussian source, derivative, intensity rescale).
 
