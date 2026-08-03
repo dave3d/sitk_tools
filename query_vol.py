@@ -9,6 +9,7 @@
 
 """ query_vol.py: Query volume information """
 
+import sys
 import argparse
 import SimpleITK as sitk
 import histo
@@ -109,7 +110,12 @@ if __name__ == "__main__":
     if args.range is not None and args.range[0] >= args.range[1]:
         parser.error("--range MIN must be less than MAX")
 
-    in_img = sitk.ReadImage(args.input)
+    try:
+        in_img = sitk.ReadImage(args.input)
+    except RuntimeError as e:
+        print("Error: unable to read", args.input)
+        sys.exit()
+
 
     print()
     print("File:      ", args.input)

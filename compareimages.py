@@ -45,7 +45,12 @@ imgs = []
 
 # Print out the stats of each image
 for n in names:
-    i = sitk.ReadImage(n)
+    try:
+        i = sitk.ReadImage(n)
+    except RuntimeError as e:
+        print("Error: unable to read", n)
+        continue
+
     imgs.append(i)
     # print(i)
 

@@ -22,6 +22,7 @@ The input can be any format that SimpleITK supports (NRRD, NIfTI, MHD, …).
 Defaults to teapot.nrrd when no argument is given.
 """
 
+import sys
 import argparse
 import time
 import uuid
@@ -37,7 +38,12 @@ def main():  # pylint: disable=too-many-locals
                         help="Input image file (default: teapot.nrrd)")
     args = parser.parse_args()
 
-    volume = sitk.ReadImage(args.input)
+    try:
+        volume = sitk.ReadImage(args.input)
+    except RuntimeError as e:
+        print("Error: unable to read", args.input)
+        sys.exit(1)
+
     if volume.GetDimension() != 3:
         raise ValueError(f"Expected a 3D image, got {volume.GetDimension()}D: {args.input}")
 
