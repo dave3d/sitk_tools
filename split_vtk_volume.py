@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import argparse
+from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
 import os
 from pathlib import Path
@@ -317,10 +318,64 @@ def _write_piece_grid(
         _write_piece(source_data, extent, piece_filename)
 
 
-def split_vti(input_file: str, output_pvti: str, nx: int, ny: int, nz: int) -> None:
+def _partition_piece_jobs(
+    piece_extents: list[list[int]], workers: int
+) -> list[list[tuple[int, list[int]]]]:
+    """Partition piece IDs/extents into batches for parallel workers."""
+    batches: list[list[tuple[int, list[int]]]] = [[] for _ in range(workers)]
+    for piece_id, extent in enumerate(piece_extents):
+        batches[piece_id % workers].append((piece_id, extent))
+    return [batch for batch in batches if batch]
+
+
+def _write_piece_batch(
+    input_file: str,
+    output_pvti: str,
+    base_name: str,
+    jobs: list[tuple[int, list[int]]],
+) -> None:
+    """Worker entrypoint: read input once and write a batch of piece files."""
+    reader = _build_image_reader(input_file)
+    reader.Update()
+    source_data = reader.GetOutput()
+    _validate_source_data(source_data, input_file)
+
+    output_path = Path(output_pvti).resolve()
+    for piece_id, extent in jobs:
+        piece_filename = output_path.with_name(f"{base_name}_{piece_id}.vti")
+        _write_piece(source_data, extent, piece_filename)
+
+
+def _write_piece_grid_parallel(
+    input_file: str,
+    output_pvti: str,
+    base_name: str,
+    piece_extents: list[list[int]],
+    jobs: int,
+) -> None:
+    """Write piece files in parallel using multiple processes."""
+    workers = min(jobs, len(piece_extents))
+    if workers <= 1:
+        return
+
+    job_batches = _partition_piece_jobs(piece_extents, workers)
+    with ProcessPoolExecutor(max_workers=workers) as executor:
+        futures = [
+            executor.submit(_write_piece_batch, input_file, output_pvti, base_name, batch)
+            for batch in job_batches
+        ]
+        for future in futures:
+            future.result()
+
+
+def split_vti(
+    input_file: str, output_pvti: str, nx: int, ny: int, nz: int, jobs: int = 1
+) -> None:
     """Split a 3D image into a grid of sub-volumes and write a matching PVTI."""
     if nx <= 0 or ny <= 0 or nz <= 0:
         raise ValueError("nx, ny, and nz must all be positive integers.")
+    if jobs <= 0:
+        raise ValueError("jobs must be a positive integer.")
 
     reader = _build_image_reader(input_file)
     reader.Update()
@@ -339,7 +394,11 @@ def split_vti(input_file: str, output_pvti: str, nx: int, ny: int, nz: int) -> N
     print(f"Source global extent: {geometry.global_extent}")
 
     output_path, base_name = _prepare_output(output_pvti)
-    _write_piece_grid(source_data, output_path, base_name, piece_extents)
+    if jobs == 1:
+        _write_piece_grid(source_data, output_path, base_name, piece_extents)
+    else:
+        print(f"Writing pieces with {min(jobs, len(piece_extents))} worker processes...")
+        _write_piece_grid_parallel(input_file, str(output_path), base_name, piece_extents, jobs)
 
     write_pvti_header(
         str(output_path),
@@ -409,6 +468,13 @@ def main() -> None:
         default=2,
         help="Number of grid subdivisions along the Z axis",
     )
+    parser.add_argument(
+        "-j",
+        "--jobs",
+        type=int,
+        default=1,
+        help="Number of worker processes used to write output pieces (default: 1)",
+    )
 
     args = parser.parse_args()
 
@@ -418,7 +484,7 @@ def main() -> None:
         else:
             raise FileNotFoundError(f"Input file does not exist: {args.input}")
 
-    split_vti(args.input, args.output, args.nx, args.ny, args.nz)
+    split_vti(args.input, args.output, args.nx, args.ny, args.nz, args.jobs)
 
 
 if __name__ == "__main__":
