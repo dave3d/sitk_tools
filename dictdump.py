@@ -20,7 +20,7 @@ for f in fnames:
         img = sitk.ReadImage(f)
     except RuntimeError:
         print("Error: unable to read", f)
-
+        continue
     print("\nFile: ", f)
 
     keys = img.GetMetaDataKeys()
