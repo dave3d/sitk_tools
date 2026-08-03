@@ -30,6 +30,23 @@ class ImageGeometry:
     cell_data: object
 
 
+@dataclass(frozen=True)
+class SplitOptions:
+    """Grid and parallelism options used by split_vti."""
+
+    nx: int
+    ny: int
+    nz: int
+    jobs: int = 1
+
+    def validate(self) -> None:
+        """Validate split and parallelism settings."""
+        if self.nx <= 0 or self.ny <= 0 or self.nz <= 0:
+            raise ValueError("nx, ny, and nz must all be positive integers.")
+        if self.jobs <= 0:
+            raise ValueError("jobs must be a positive integer.")
+
+
 def calculate_splits(min_val: int, max_val: int, num_splits: int) -> list[tuple[int, int]]:
     """Split an extent axis into contiguous inclusive intervals.
 
@@ -280,6 +297,14 @@ def _piece_extent_grid(
     return extents
 
 
+def _build_piece_extents(geometry: ImageGeometry, options: SplitOptions) -> list[list[int]]:
+    """Compute the full set of output extents for the requested split grid."""
+    x_intervals, y_intervals, z_intervals = _calculate_axis_intervals(
+        geometry.global_extent, options.nx, options.ny, options.nz
+    )
+    return _piece_extent_grid(x_intervals, y_intervals, z_intervals)
+
+
 def _write_piece(source_data, extent: list[int], piece_filename: Path) -> None:
     """Extract and write a single VTI sub-volume for the given extent."""
     extract = vtk.vtkExtractVOI()
@@ -368,14 +393,9 @@ def _write_piece_grid_parallel(
             future.result()
 
 
-def split_vti(
-    input_file: str, output_pvti: str, nx: int, ny: int, nz: int, jobs: int = 1
-) -> None:
+def split_vti(input_file: str, output_pvti: str, options: SplitOptions) -> None:
     """Split a 3D image into a grid of sub-volumes and write a matching PVTI."""
-    if nx <= 0 or ny <= 0 or nz <= 0:
-        raise ValueError("nx, ny, and nz must all be positive integers.")
-    if jobs <= 0:
-        raise ValueError("jobs must be a positive integer.")
+    options.validate()
 
     reader = _build_image_reader(input_file)
     reader.Update()
@@ -384,21 +404,29 @@ def split_vti(
     _validate_source_data(source_data, input_file)
 
     geometry = _extract_geometry(source_data)
-    x_intervals, y_intervals, z_intervals = _calculate_axis_intervals(
-        geometry.global_extent, nx, ny, nz
-    )
-    piece_extents = _piece_extent_grid(x_intervals, y_intervals, z_intervals)
+    piece_extents = _build_piece_extents(geometry, options)
 
-    total_pieces = nx * ny * nz
-    print(f"Splitting grid into {nx}x{ny}x{nz} ({total_pieces} total pieces)...")
+    print(
+        f"Splitting grid into {options.nx}x{options.ny}x{options.nz} "
+        f"({options.nx * options.ny * options.nz} total pieces)..."
+    )
     print(f"Source global extent: {geometry.global_extent}")
 
     output_path, base_name = _prepare_output(output_pvti)
-    if jobs == 1:
+    if options.jobs == 1:
         _write_piece_grid(source_data, output_path, base_name, piece_extents)
     else:
-        print(f"Writing pieces with {min(jobs, len(piece_extents))} worker processes...")
-        _write_piece_grid_parallel(input_file, str(output_path), base_name, piece_extents, jobs)
+        print(
+            "Writing pieces with "
+            f"{min(options.jobs, len(piece_extents))} worker processes..."
+        )
+        _write_piece_grid_parallel(
+            input_file,
+            str(output_path),
+            base_name,
+            piece_extents,
+            options.jobs,
+        )
 
     write_pvti_header(
         str(output_path),
@@ -484,7 +512,8 @@ def main() -> None:
         else:
             raise FileNotFoundError(f"Input file does not exist: {args.input}")
 
-    split_vti(args.input, args.output, args.nx, args.ny, args.nz, args.jobs)
+    split_options = SplitOptions(args.nx, args.ny, args.nz, args.jobs)
+    split_vti(args.input, args.output, split_options)
 
 
 if __name__ == "__main__":
