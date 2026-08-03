@@ -40,7 +40,7 @@ def main():  # pylint: disable=too-many-locals
 
     try:
         volume = sitk.ReadImage(args.input)
-    except RuntimeError as e:
+    except RuntimeError:
         print("Error: unable to read", args.input)
         sys.exit(1)
 

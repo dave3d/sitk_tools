@@ -18,7 +18,7 @@ fnames = sys.argv[1:]
 for f in fnames:
     try:
         img = sitk.ReadImage(f)
-    except RuntimeError as e:
+    except RuntimeError:
         print("Error: unable to read", f)
 
     print("\nFile: ", f)

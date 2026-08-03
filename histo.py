@@ -53,7 +53,7 @@ def _draw_histogram(hist, bins, nbins, width=60):
 if __name__ == "__main__":
     try:
         in_img = sitk.ReadImage(sys.argv[1])
-    except RuntimeError as e:
+    except RuntimeError:
         print("Error: unable to read", sys.argv[1])
         sys.exit(1)
 

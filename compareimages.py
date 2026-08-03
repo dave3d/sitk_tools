@@ -47,7 +47,7 @@ imgs = []
 for n in names:
     try:
         i = sitk.ReadImage(n)
-    except RuntimeError as e:
+    except RuntimeError:
         print("Error: unable to read", n)
         continue
 

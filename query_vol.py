@@ -112,7 +112,7 @@ if __name__ == "__main__":
 
     try:
         in_img = sitk.ReadImage(args.input)
-    except RuntimeError as e:
+    except RuntimeError:
         print("Error: unable to read", args.input)
         sys.exit()
 
