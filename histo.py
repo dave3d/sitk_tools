@@ -51,7 +51,11 @@ def _draw_histogram(hist, bins, nbins, width=60):
 
 
 if __name__ == "__main__":
-    in_img = sitk.ReadImage(sys.argv[1])
+    try:
+        in_img = sitk.ReadImage(sys.argv[1])
+    except RuntimeError:
+        print("Error: unable to read", sys.argv[1])
+        sys.exit(1)
 
     # Defaults to standard Hounsfield units range
     r = [-1000.0, 2000.0]

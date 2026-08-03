@@ -16,8 +16,11 @@ fnames = sys.argv[1:]
 
 
 for f in fnames:
-    img = sitk.ReadImage(f)
-
+    try:
+        img = sitk.ReadImage(f)
+    except RuntimeError:
+        print("Error: unable to read", f)
+        continue
     print("\nFile: ", f)
 
     keys = img.GetMetaDataKeys()
