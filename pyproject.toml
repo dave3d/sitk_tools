@@ -1,10 +1,16 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "sitk-tools"
 version = "0.1.0"
 description = "Utility scripts for medical image processing built on SimpleITK"
+readme = "README.md"
 requires-python = ">=3.10"
+license = { file = "LICENSE" }
 dependencies = [
-    "simpleitk",
+    "SimpleITK",
     "numpy",
 ]
 
@@ -12,30 +18,34 @@ dependencies = [
 vtk = ["vtk"]
 dev = ["pytest"]
 
-[build-system]
-requires = ["setuptools>=61"]
-build-backend = "setuptools.build_meta"
+[project.scripts]
+sitk-bound-obj = "sitk_tools.bound_obj:main"
+sitk-compareimages = "sitk_tools.compareimages:main"
+sitk-dicomseries = "sitk_tools.dicomseries:main"
+sitk-dictdump = "sitk_tools.dictdump:main"
+sitk-extract-objects = "sitk_tools.extract_objects:main"
+sitk-extract-subimages = "sitk_tools.extract_subimages:main"
+sitk-hdr2mhd = "sitk_tools.hdr2mhd:main"
+sitk-histo = "sitk_tools.histo:main"
+sitk-lmreg = "sitk_tools.lmreg:main"
+sitk-merge-slices = "sitk_tools.merge_slices:main"
+sitk-mkdicom = "sitk_tools.mkdicom:main"
+sitk-nifti2vti = "sitk_tools.nifti2vti:main"
+sitk-query-vol = "sitk_tools.query_vol:main"
+sitk-radial-slices = "sitk_tools.radial_slices:main"
+sitk-removemetadata = "sitk_tools.removemetadata:main"
+sitk-resample-to-volume = "sitk_tools.resample_to_volume:main"
+sitk-resize-vol = "sitk_tools.resizeVol:main"
+sitk-show = "sitk_tools.show:main"
+sitk-sitk-test = "sitk_tools.sitk_test:main"
+sitk-split-vti = "sitk_tools.split_vti:main"
+sitk-split-vti-fixed = "sitk_tools.split_vti_fixed:main"
+sitk-split-vtk-volume = "sitk_tools.split_vtk_volume:main"
+sitk-vector-test = "sitk_tools.vector:main"
+sitk-vti-sitk = "sitk_tools.vti_sitk:main"
 
-[tool.setuptools]
-py-modules = [
-    "bound_obj",
-    "compareimages",
-    "dicomseries",
-    "dictdump",
-    "extract_objects",
-    "extract_subimages",
-    "hdr2mhd",
-    "histo",
-    "lmreg",
-    "merge_slices",
-    "nifti2vti",
-    "paint_points",
-    "query_vol",
-    "radial_slices",
-    "removemetadata",
-    "resample_to_volume",
-    "resizeVol",
-    "show",
-    "sitk_test",
-    "vector",
-]
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
