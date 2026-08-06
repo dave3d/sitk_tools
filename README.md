@@ -2,6 +2,20 @@
 
 A collection of Python utility scripts for medical image processing built on [SimpleITK](https://simpleitk.org/).
 
+## Package Layout
+
+This repository now uses a standard `src` layout for packaging:
+
+```
+src/
+    sitk_tools/
+        ...modules...
+tests/
+pyproject.toml
+```
+
+The original top-level scripts are still present for compatibility, while the installable package lives under `src/sitk_tools`.
+
 ## Requirements
 
 - Python 3.10+
@@ -15,6 +29,12 @@ A `pyproject.toml` is provided. Install all core dependencies with:
 
 ```bash
 pip install .
+```
+
+For editable development installs:
+
+```bash
+pip install -e ".[dev]"
 ```
 
 Or using [uv](https://docs.astral.sh/uv/):
@@ -36,6 +56,21 @@ pip install ".[dev]"
 ```
 
 ## Scripts
+
+After installation, you can run tools as Python modules, for example:
+
+```bash
+python -m sitk_tools.resample_to_volume --help
+python -m sitk_tools.split_vtk_volume --help
+```
+
+Several console scripts are also installed:
+
+```bash
+sitk-resample-to-volume --help
+sitk-split-vtk-volume --help
+sitk-dicomseries --help
+```
 
 ### `bound_obj.py`
 Find the bounding box of an object in a binary image.

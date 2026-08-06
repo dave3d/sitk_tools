@@ -1,6 +1,7 @@
-"""pytest configuration: make the repo root importable for all tests."""
+"""pytest configuration: make the src package importable for all tests."""
 
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+repo_root = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(repo_root / "src"))
