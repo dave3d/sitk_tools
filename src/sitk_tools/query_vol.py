@@ -9,7 +9,6 @@
 
 """ query_vol.py: Query volume information """
 
-import sys
 import argparse
 import SimpleITK as sitk
 from . import histo

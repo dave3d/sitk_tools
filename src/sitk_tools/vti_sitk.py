@@ -8,16 +8,17 @@
 # ]
 # ///
 
+"""Convert between VTI and SimpleITK images using VTK and SimpleITK utilities."""
 
 import sys
 import vtk
-import numpy as np
 import SimpleITK as sitk
-from SimpleITK.utilities import vtk
+from SimpleITK.utilities import vtk as sitk_vtk
 from vtk.util.numpy_support import vtk_to_numpy, numpy_to_vtk
 
 
 def vti_to_sitk(vti_path: str) -> sitk.Image:
+    """Read a VTI image and convert it to a SimpleITK image."""
     reader = vtk.vtkXMLImageDataReader()
     reader.SetFileName(vti_path)
     reader.Update()
@@ -61,6 +62,7 @@ def vti_to_sitk(vti_path: str) -> sitk.Image:
 
 
 def sitk_to_vti(image: sitk.Image, vti_path: str, array_name: str = "ImageScalars") -> None:
+    """Convert a SimpleITK image to VTI and write it to disk."""
     # Convert SimpleITK -> NumPy
     arr = sitk.GetArrayFromImage(image)
 
@@ -107,9 +109,6 @@ def sitk_to_vti(image: sitk.Image, vti_path: str, array_name: str = "ImageScalar
         raise IOError(f"Failed to write VTI file: {vti_path}")
 
 
-import vtk
-
-
 def read_vti_image(file_path: str) -> vtk.vtkImageData:
     """
     Read a VTI (VTK XML ImageData) file and return vtkImageData.
@@ -133,9 +132,6 @@ def read_vti_image(file_path: str) -> vtk.vtkImageData:
         raise RuntimeError(f"Failed to read VTI file: {file_path}")
 
     return image
-
-import vtk
-
 
 def write_vti_image(image: vtk.vtkImageData, file_path: str) -> None:
     """
@@ -176,14 +172,14 @@ def main(argv=None):
     if inname.endswith("vti"):
         print("Reading VTI image", inname)
         vti_img = read_vti_image(inname)
-        sitk_img = vtk.vtk2sitk(vti_img)
+        sitk_img = sitk_vtk.vtk2sitk(vti_img)
         print("Writing SimpleITK image", outname)
         sitk.WriteImage(sitk_img, outname)
     else:
         print("Reading SimpleITK image", inname)
         sitk_img = sitk.ReadImage(inname)
         print("Writing VTI image", outname)
-        vti_img = vtk.sitk2vtk(sitk_img)
+        vti_img = sitk_vtk.sitk2vtk(sitk_img)
         write_vti_image(vti_img, outname)
     return 0
 

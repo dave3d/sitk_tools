@@ -5,6 +5,11 @@
 # ]
 # ///
 
+"""Split a VTI file into piece VTI files plus a PVTI manifest."""
+
+# Legacy script retained mostly as-is; complexity and line length are acceptable here.
+# pylint: disable=line-too-long,too-many-arguments,too-many-positional-arguments,too-many-locals
+
 import argparse
 import os
 import vtk
@@ -34,7 +39,7 @@ def write_pvti_header(pvti_filename, global_extent, origin, spacing, scalar_name
     ori_str = " ".join(map(str, origin))
     spa_str = " ".join(map(str, spacing))
 
-    with open(pvti_filename, "w") as f:
+    with open(pvti_filename, "w", encoding="utf-8") as f:
         f.write('<?xml version="1.0"?>\n')
         f.write('<VTKFile type="PImageData" version="0.1" byte_order="LittleEndian" header_type="UInt64">\n')
         f.write(f'  <PImageData WholeExtent="{ext_str}" Origin="{ori_str}" Spacing="{spa_str}" GhostLevel="0">\n')
@@ -53,6 +58,7 @@ def write_pvti_header(pvti_filename, global_extent, origin, spacing, scalar_name
 
 
 def split_vti(input_file, output_pvti, nx, ny, nz):
+    """Split a VTI image into an nx by ny by nz grid and write PVTI metadata."""
     # 1. Read the source VTI file
     reader = vtk.vtkXMLImageDataReader()
     reader.SetFileName(input_file)
@@ -177,4 +183,3 @@ def main(argv=None):
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

@@ -1,7 +1,7 @@
 """
 Tests for resample_to_volume.py
 """
-# pylint: disable=missing-function-docstring,missing-class-docstring
+# pylint: disable=missing-function-docstring,missing-class-docstring,too-many-arguments,too-many-positional-arguments
 
 import argparse
 from pathlib import Path
