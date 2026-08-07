@@ -1,5 +1,5 @@
-# pylint: disable=wrong-import-position,line-too-long
 #!/usr/bin/env python3
+# pylint: disable=wrong-import-position,line-too-long
 """Compatibility shim for running root-level vector.py."""
 
 from pathlib import Path
