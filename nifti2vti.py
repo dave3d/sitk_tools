@@ -1,49 +1,23 @@
-#! /usr/bin/env python3
-# /// script
-# requires-python = ">=3.10"
-# dependencies = [
-#   "vtk",
-# ]
-# ///
+# pylint: disable=wrong-import-position,line-too-long
+#!/usr/bin/env python3
+"""Compatibility shim for running root-level nifti2vti.py."""
 
-""" nifti2vti.py: Convert one or more NIfTI 3D images to compressed VTI files """
-
+from pathlib import Path
 import sys
-import pathlib
-import vtk
+import warnings
 
+_SRC = Path(__file__).resolve().parent / "src"
+if _SRC.exists():
+    sys.path.insert(0, str(_SRC))
 
-def derive_output_path(input_path: str) -> str:
-    """Return the output .vti path derived from a NIfTI input path."""
-    p = pathlib.Path(input_path)
-    # Strip .nii or .nii.gz suffix
-    if p.suffix == ".gz":
-        p = p.with_suffix("")
-    if p.suffix == ".nii":
-        p = p.with_suffix("")
-    return str(p) + ".vti"
+warnings.warn(
+    "Running root-level nifti2vti.py is deprecated. Use python -m sitk_tools.nifti2vti.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
-
-def nifti_to_vti(input_path: str, output_path: str) -> None:
-    """Read a NIfTI file and write it as a compressed VTK XML image (.vti)."""
-    reader = vtk.vtkNIFTIImageReader()
-    reader.SetFileName(input_path)
-    reader.Update()
-
-    writer = vtk.vtkXMLImageDataWriter()
-    writer.SetFileName(output_path)
-    writer.SetInputConnection(reader.GetOutputPort())
-    writer.SetCompressorTypeToZLib()
-    writer.SetDataModeToBinary()
-    writer.Write()
-
-    print(f"Written: {output_path}")
+from sitk_tools.nifti2vti import main
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print(f"Usage: {sys.argv[0]} <input.nii[.gz]> [input2.nii[.gz] ...]")
-        sys.exit(1)
-
-    for src in sys.argv[1:]:
-        nifti_to_vti(src, derive_output_path(src))
+    raise SystemExit(main())
