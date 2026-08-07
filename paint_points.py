@@ -12,7 +12,7 @@ if _SRC.exists():
 
 warnings.warn(
     "Importing root-level paint_points is deprecated. Use sitk_tools.paint_points.",
-    DeprecationWarning,
+    FutureWarning,
     stacklevel=2,
 )
 
