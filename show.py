@@ -1,36 +1,23 @@
 #!/usr/bin/env python3
-# /// script
-# requires-python = ">=3.10"
-# dependencies = [
-#   "SimpleITK",
-# ]
-# ///
+# pylint: disable=wrong-import-position,line-too-long
+"""Compatibility shim for running root-level show.py."""
 
+from pathlib import Path
+import sys
+import warnings
 
-"""  A simple script that uses SimpleITK's Show function to display images
-  in Fiji/ImageJ, by default. """
+_SRC = Path(__file__).resolve().parent / "src"
+if _SRC.exists():
+    sys.path.insert(0, str(_SRC))
 
-import argparse
-import SimpleITK as sitk
-
-parser = argparse.ArgumentParser()
-parser.add_argument("filenames", nargs="*")
-parser.add_argument(
-    "--scale",
-    "-s",
-    action="store",
-    dest="scale",
-    type=float,
-    default=1.0,
-    help="Scale intensity",
+warnings.warn(
+    "Running root-level show.py is deprecated. Use python -m sitk_tools.show.",
+    DeprecationWarning,
+    stacklevel=2,
 )
 
-args = parser.parse_args()
-print(args)
+from sitk_tools.show import main
 
-for x in args.filenames:
-    print(x)
-    img = sitk.ReadImage(x)
-    if img.GetNumberOfComponentsPerPixel() == 1:
-        img = img * args.scale
-    sitk.Show(img, x)
+
+if __name__ == "__main__":
+    raise SystemExit(main())

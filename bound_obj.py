@@ -1,41 +1,23 @@
 #!/usr/bin/env python3
-# /// script
-# requires-python = ">=3.10"
-# dependencies = [
-#   "SimpleITK",
-# ]
-# ///
+# pylint: disable=wrong-import-position,line-too-long
+"""Compatibility shim for running root-level bound_obj.py."""
 
-"""Script to find the bounding box of an object in a binary image."""
-
+from pathlib import Path
 import sys
-import SimpleITK as sitk
+import warnings
 
+_SRC = Path(__file__).resolve().parent / "src"
+if _SRC.exists():
+    sys.path.insert(0, str(_SRC))
 
-def bound_obj(input_image, threshold=1.0):
-    """Find the bounding box of an object in a binary image."""
+warnings.warn(
+    "Running root-level bound_obj.py is deprecated. Use python -m sitk_tools.bound_obj.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
-    img2 = input_image >= threshold
-    stats = sitk.LabelShapeStatisticsImageFilter()
-    stats.Execute(img2)
-
-    n = stats.GetNumberOfLabels()
-    if n == 0:
-        print("Error:  No labels")
-        return
-
-    b = stats.GetBoundingBox(1)
-    print("X range:", b[0], b[0] + b[3] - 1)
-    print("Y range:", b[1], b[1] + b[4] - 1)
-    print("Z range:", b[2], b[2] + b[5] - 1)
+from sitk_tools.bound_obj import main
 
 
 if __name__ == "__main__":
-
-    img_name = sys.argv[1]
-    THRESHOLD = 1.0
-    if len(sys.argv) > 2:
-        THRESHOLD = float(sys.argv[2])
-
-    img = sitk.ReadImage(img_name)
-    bound_obj(img, THRESHOLD)
+    raise SystemExit(main())

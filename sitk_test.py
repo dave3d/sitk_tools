@@ -1,38 +1,23 @@
 #!/usr/bin/env python3
-# /// script
-# requires-python = ">=3.10"
-# dependencies = [
-#   "SimpleITK",
-# ]
-# ///
+# pylint: disable=wrong-import-position,line-too-long
+"""Compatibility shim for running root-level sitk_test.py."""
 
+from pathlib import Path
+import sys
+import warnings
 
-"""  A test script that I wrote to exercise SimpleITK a bit """
+_SRC = Path(__file__).resolve().parent / "src"
+if _SRC.exists():
+    sys.path.insert(0, str(_SRC))
 
-import platform
-import SimpleITK as sitk
-
-print(platform.python_version())
-print(platform.platform())
-print(sitk)
-print(sitk.Version())
-
-gauss = sitk.GaussianSource(
-    sitk.sitkFloat32, [128, 128, 128], [32.0, 32.0, 32.0], [64.0, 64.0, 64.0]
+warnings.warn(
+    "Running root-level sitk_test.py is deprecated. Use python -m sitk_tools.sitk_test.",
+    DeprecationWarning,
+    stacklevel=2,
 )
 
-deriv = sitk.Derivative(gauss)
+from sitk_tools.sitk_test import main
 
-result = sitk.RescaleIntensity(deriv, 0.0, 255.0)
 
-result = sitk.Cast(result, sitk.sitkUInt8)
-
-cutslice = result[:, :, 64]
-
-sitk.Show(
-    cutslice,
-    "python "
-    + platform.python_version()
-    + "; SimpleITK "
-    + sitk.Version_VersionString(),
-)
+if __name__ == "__main__":
+    raise SystemExit(main())

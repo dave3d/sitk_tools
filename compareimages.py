@@ -1,63 +1,23 @@
 #!/usr/bin/env python3
-# /// script
-# requires-python = ">=3.10"
-# dependencies = [
-#   "SimpleITK",
-# ]
-# ///
+# pylint: disable=wrong-import-position,line-too-long
+"""Compatibility shim for running root-level compareimages.py."""
 
-""" Compare two images by computing the difference image and printing out the
-stats of the difference image. """
-
+from pathlib import Path
 import sys
-import SimpleITK as sitk
+import warnings
 
-# Given a list of images, print out the stats of each image, and then
-# compare the first image with each of the others.
+_SRC = Path(__file__).resolve().parent / "src"
+if _SRC.exists():
+    sys.path.insert(0, str(_SRC))
 
+warnings.warn(
+    "Running root-level compareimages.py is deprecated. Use python -m sitk_tools.compareimages.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
-def printStats(img, name):
-    """Print out the stats of the given image."""
-    stats = sitk.StatisticsImageFilter()
-    stats.Execute(img)
-    print("\n", name)
-    print("    Mean:", stats.GetMean())
-    print("    Min:", stats.GetMinimum())
-    print("    Max:", stats.GetMaximum())
-    print("    Sigma:", stats.GetSigma())
-    print("    Sum:", stats.GetSum())
+from sitk_tools.compareimages import main
 
 
-# Compute a difference image between two images, and then print
-# the stats of that difference image.
-def compareImages(img1, name1, img2, name2):
-    """Compute a difference image between two images, and then print
-    the stats of that difference image."""
-    print("\nComparing", name1, "and", name2)
-    diff_img = img1 - img2
-    printStats(diff_img, "diff")
-
-
-names = sys.argv[1:]
-print(names)
-imgs = []
-
-
-# Print out the stats of each image
-for n in names:
-    try:
-        i = sitk.ReadImage(n)
-    except RuntimeError:
-        print("Error: unable to read", n)
-        continue
-
-    imgs.append(i)
-    # print(i)
-
-    printStats(i, n)
-
-print("\n")
-
-# Compare the first image with each of the rest
-for n, i in zip(names[1:], imgs[1:]):
-    compareImages(imgs[0], names[0], i, n)
+if __name__ == "__main__":
+    raise SystemExit(main())

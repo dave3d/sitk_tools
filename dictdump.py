@@ -1,30 +1,23 @@
+# pylint: disable=wrong-import-position,line-too-long
 #!/usr/bin/env python3
-# /// script
-# requires-python = ">=3.10"
-# dependencies = [
-#   "SimpleITK",
-# ]
-# ///
+"""Compatibility shim for running root-level dictdump.py."""
 
-"""  Simple script to dump out an image's meta-data dictionary """
-
+from pathlib import Path
 import sys
-import SimpleITK as sitk
+import warnings
+
+_SRC = Path(__file__).resolve().parent / "src"
+if _SRC.exists():
+    sys.path.insert(0, str(_SRC))
+
+warnings.warn(
+    "Running root-level dictdump.py is deprecated. Use python -m sitk_tools.dictdump.",
+    DeprecationWarning,
+    stacklevel=2,
+)
+
+from sitk_tools.dictdump import main
 
 
-fnames = sys.argv[1:]
-
-
-for f in fnames:
-    try:
-        img = sitk.ReadImage(f)
-    except RuntimeError:
-        print("Error: unable to read", f)
-        continue
-    print("\nFile: ", f)
-
-    keys = img.GetMetaDataKeys()
-
-    for k in keys:
-        v = img.GetMetaData(k)
-        print(k, ": ", v)
+if __name__ == "__main__":
+    raise SystemExit(main())
