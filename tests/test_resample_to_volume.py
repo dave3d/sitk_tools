@@ -10,7 +10,7 @@ import pytest
 import numpy as np
 import SimpleITK as sitk
 
-import resample_to_volume as rtv
+from sitk_tools import resample_to_volume as rtv
 
 
 # ---------------------------------------------------------------------------
