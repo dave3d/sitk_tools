@@ -1,5 +1,5 @@
-# pylint: disable=wrong-import-position,line-too-long
 #!/usr/bin/env python3
+# pylint: disable=wrong-import-position,line-too-long
 """Compatibility shim for importing root-level paint_points."""
 
 from pathlib import Path
