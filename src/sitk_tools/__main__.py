@@ -4,6 +4,7 @@ import argparse
 
 
 def main() -> int:
+    """Run package-level command-line helper."""
     parser = argparse.ArgumentParser(
         prog="python -m sitk_tools",
         description="SimpleITK utility collection. Use submodules as entry points.",

@@ -48,6 +48,7 @@ def physical_corners(img: sitk.Image) -> np.ndarray:
     ])
 
 
+# pylint: disable=too-many-locals
 def extract_radial_slice(
     img: sitk.Image,
     angle_rad: float,
@@ -131,6 +132,9 @@ def extract_radial_slice(
     )
 
 
+# pylint: enable=too-many-locals
+
+
 def rescale_to_uint16(img: sitk.Image) -> sitk.Image:
     """Linearly rescale intensities to [0, 65535] and cast to uint16."""
     img_f = sitk.Cast(img, sitk.sitkFloat32)
@@ -143,6 +147,7 @@ def rescale_to_uint16(img: sitk.Image) -> sitk.Image:
 
 
 def main(argv=None):
+    """CLI entry point."""
     parser = argparse.ArgumentParser(
         prog="sitk-radial-slices",
         description="Extract a radial series of 2-D reformats from a 3-D volume.",

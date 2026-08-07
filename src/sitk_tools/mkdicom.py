@@ -22,7 +22,6 @@ The input can be any format that SimpleITK supports (NRRD, NIfTI, MHD, …).
 Defaults to teapot.nrrd when no argument is given.
 """
 
-import sys
 import argparse
 import time
 import uuid

@@ -41,14 +41,14 @@ def main(argv=None):
         usage()
         return 1
 
-    for o, a in opts:
+    for o, _ in opts:
         if o in ("-h", "--help"):
             usage()
             return 0
-        elif o in ("-v", "--verbose"):
+        if o in ("-v", "--verbose"):
             verbose = True
-        else:
-            assert False, "unhandled option"
+            continue
+        assert False, "unhandled option"
 
     if len(args) < 2:
         usage()
