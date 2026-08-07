@@ -46,7 +46,7 @@ def resizeVol(vol, newsize):
 
 # Handler for the standalone script
 #
-def main(argv=None):
+def main(argv=None):  # pylint: disable=too-many-locals,too-many-branches
     """CLI entry point."""
     verbose = False
     s2 = [1000000, 1000000, 1000000]
@@ -76,16 +76,19 @@ def main(argv=None):
         if o in ("-h", "--help"):
             usage()
             return 0
-        elif o in ("-v", "--verbose"):
+        if o in ("-v", "--verbose"):
             verbose = True
-        elif o in ("-x", "--x"):
+            continue
+        if o in ("-x", "--x"):
             s2[0] = int(a)
-        elif o in ("-y", "--y"):
+            continue
+        if o in ("-y", "--y"):
             s2[1] = int(a)
-        elif o in ("-z", "--z"):
+            continue
+        if o in ("-z", "--z"):
             s2[2] = int(a)
-        else:
-            assert False, "unhandled option"
+            continue
+        assert False, "unhandled option"
 
     print(s2)
 

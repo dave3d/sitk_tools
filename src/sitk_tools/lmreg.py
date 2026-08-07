@@ -8,7 +8,6 @@
 
 """ Landmark registration using SimpleITK. """
 
-import sys
 import argparse
 import SimpleITK as sitk
 from . import paint_points
@@ -193,7 +192,7 @@ def make_points_3d(pts):
     return new_pts
 
 
-def main(argv=None):
+def main(argv=None):  # pylint: disable=too-many-locals
     """CLI entry point."""
     args = parseargs(argv)
 

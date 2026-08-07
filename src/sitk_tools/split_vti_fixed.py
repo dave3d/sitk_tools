@@ -98,6 +98,7 @@ def _build_data_section(parent, data_obj, section_tag: str) -> None:
         ET.SubElement(section, "PDataArray", _array_metadata(array))
 
 
+# pylint: disable=too-many-arguments,too-many-positional-arguments
 def write_pvti_header(
     pvti_filename: str,
     global_extent: list[int],
@@ -148,6 +149,9 @@ def write_pvti_header(
     tree.write(pvti_filename, encoding="utf-8", xml_declaration=True)
 
 
+# pylint: enable=too-many-arguments,too-many-positional-arguments
+
+
 def _validate_source_data(source_data, input_file: str) -> None:
     if source_data is None:
         raise RuntimeError(f"Failed to read VTI file: {input_file}")
@@ -160,7 +164,7 @@ def _validate_source_data(source_data, input_file: str) -> None:
         raise ValueError(f"Invalid image extent: {extent}")
 
 
-def split_vti(input_file: str, output_pvti: str, nx: int, ny: int, nz: int) -> None:
+def split_vti(input_file: str, output_pvti: str, nx: int, ny: int, nz: int) -> None:  # pylint: disable=too-many-locals
     """Split a VTI image into a grid of sub-volumes and write a matching PVTI."""
     if nx <= 0 or ny <= 0 or nz <= 0:
         raise ValueError("nx, ny, and nz must all be positive integers.")
@@ -256,6 +260,7 @@ def create_dummy_vti(filename: str) -> None:
 
 
 def main(argv=None) -> int:
+    """CLI entry point."""
     parser = argparse.ArgumentParser(
         prog="sitk-split-vti-fixed",
         description="Subdivide a 3D VTI image into an arbitrary parallel block grid."
